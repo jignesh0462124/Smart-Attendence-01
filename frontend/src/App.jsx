@@ -18,7 +18,6 @@ import ManagerCalendar from "./ManagerPages/ManagerCalendar";
 import ManagerProfile from "./ManagerPages/ManagerProfile";
 import ViewEmployee from "./ManagerPages/ViewEmployee";
 
-
 const App = () => {
   return (
     <Router>
@@ -26,19 +25,19 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="signup" element={<Signup />} />
         <Route path="employee-dashboard" element={<EmployeeDashboard />} />
-        <Route path="admin-dashboard" element={<AdminDashboard/>} />
-        <Route path="manager-dashboard" element={<ManagerDashboard/>} />
-        <Route path="admin-profile" element={<AdminProfile/>} />
-        <Route path="all-employees" element={<AllEmployee/>} />
-        <Route path="leave-request" element={<LeaveRequest/>} />
-        <Route path="reportsandanalytics" element={<ReportAndAnalysis/>} /> 
-        <Route path="attendance-history" element={<AttendanceHistory/>} />
-        <Route path="leave" element={<EmployeeLeave/>} />
-        <Route path="profile" element={<ProfilePage/>} />
-        <Route path="id-creation" element={<IdCreation/>} />
-        <Route path="manager-calendar" element={<ManagerCalendar/>} />
-        <Route path="manager-profile" element={<ManagerProfile/>} />
-        <Route path="view-employee" element={<ViewEmployee/>} />
+        <Route path="admin-dashboard" element={<AdminDashboard />} />
+        <Route path="manager-dashboard" element={<ManagerDashboard />} />
+        <Route path="admin-profile" element={<AdminProfile />} />
+        <Route path="all-employees" element={<AllEmployee />} />
+        <Route path="leave-request" element={<LeaveRequest />} />
+        <Route path="reportsandanalytics" element={<ReportAndAnalysis />} />
+        <Route path="attendance-history" element={<AttendanceHistory />} />
+        <Route path="leave" element={<EmployeeLeave />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="id-creation" element={<IdCreation />} />
+        <Route path="manager-calendar" element={<ManagerCalendar />} />
+        <Route path="manager-profile" element={<ManagerProfile />} />
+        <Route path="view-employee" element={<ViewEmployee />} />
       </Routes>
     </Router>
   );

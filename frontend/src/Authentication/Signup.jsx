@@ -1,8 +1,12 @@
 // src/Authentication/Signup.jsx
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../supabase/supabase.js"; // ✅ one ".." (from /Authentication to /supabase)
+import { supabase } from "../../supabase/supabase.js";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  // Router navigation
+  const navigate = useNavigate();
+
   // 'login' | 'signup' | 'reset' | 'updatePassword'
   const [view, setView] = useState("login");
 
@@ -81,7 +85,9 @@ export default function Signup() {
 
       console.log("Login success:", data);
       setSuccessMsg("Logged in successfully.");
-      // TODO: navigate to dashboard route with react-router here
+
+      // ✅ Navigate to Employee Dashboard after successful login
+      navigate("/employee-dashboard");
     } catch (err) {
       console.error(err);
       setErrorMsg("Login failed. Please try again.");
