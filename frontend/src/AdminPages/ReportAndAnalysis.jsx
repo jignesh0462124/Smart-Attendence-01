@@ -112,7 +112,12 @@ const AdminDashboard = () => {
               </button>
               {/* Submenu items */}
               <div className="ml-4 space-y-1">
-                <a href="#" className="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium">Approve Entries</a>
+                <Link
+                  to="/aprove-entries"
+                  className="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium"
+                >
+                  Approve Entries
+                </Link>
                 <Link
                   to="/leave-request"
                   className="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium"
@@ -127,10 +132,13 @@ const AdminDashboard = () => {
               <span>Reports & Analytics</span>
             </Link>
 
-            <a href="#" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium group mt-2">
-              <Settings className="w-5 h-5 text-gray-500 group-hover:text-gray-900" />
+            <Link
+              to="/settings"
+              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium group mt-2"
+            >
+              <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               <span>System Settings</span>
-            </a>
+            </Link>
           </div>
         </nav>
 

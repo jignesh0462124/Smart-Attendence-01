@@ -8,69 +8,66 @@ import {
   LogOut,
   Bell,
   UserCircle,
-  Briefcase,
   ChevronDown,
+  Briefcase,
   Check,
   X,
-  MessageSquare,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // --- MOCK DATA ---
-const leaveRequestsData = [
+const pendingEntries = [
   {
     id: 1,
-    employee: {
-      name: 'Emily Davis',
-      avatar: 'https://i.pravatar.cc/150?u=emily',
-      balance: '3/12',
-    },
-    leaveType: 'Sick Leave',
-    leaveColor: 'bg-red-100 text-red-600',
-    dates: 'Oct 28 - Oct 29',
-    duration: '2 Days',
-    reason: 'High fever and flu symptoms',
+    name: 'Emily Davis',
+    avatar: 'https://i.pravatar.cc/150?u=emilydavis',
+    date: '2023-10-26',
+    location: 'Main Office',
+    gpsStatus: 'GPS Verified',
+    timeIn: '09:05',
+    timeOut: '17:00',
+    reason: 'Late check-in due to traffic.',
   },
   {
     id: 2,
-    employee: {
-      name: 'David Wilson',
-      avatar: 'https://i.pravatar.cc/150?u=david',
-      balance: '8/12',
-    },
-    leaveType: 'Casual Leave',
-    leaveColor: 'bg-blue-100 text-blue-600',
-    dates: 'Nov 02',
-    duration: '1 Day',
-    reason: 'Personal family matters',
+    name: 'David Wilson',
+    avatar: 'https://i.pravatar.cc/150?u=davidwilson',
+    date: '2023-10-26',
+    location: 'Warehouse A',
+    gpsStatus: 'GPS Confirmed',
+    timeIn: '08:58',
+    timeOut: '17:02',
+    reason: 'No issues',
   },
   {
     id: 3,
-    employee: {
-      name: 'Sophia Martinez',
-      avatar: 'https://i.pravatar.cc/150?u=sophia',
-      balance: '10/20',
-    },
-    leaveType: 'Annual Leave',
-    leaveColor: 'bg-purple-100 text-purple-600',
-    dates: 'Nov 15 - Nov 20',
-    duration: '5 Days',
-    reason: 'Planned family vacation to Europe',
+    name: 'Jessica Lee',
+    avatar: 'https://i.pravatar.cc/150?u=jessicalee',
+    date: '2023-10-25',
+    location: 'Remote Work',
+    gpsStatus: 'GPS Disabled',
+    timeIn: '09:15',
+    timeOut: '17:30',
+    reason: 'Approved WFH',
   },
 ];
 
 // --- COMPONENT ---
-// Removed : React.FC
-const LeaveRequestApprovals = () => {
-  // State for sidebar dropdowns and active tab
+const ApproveEntries = () => {
+  // State for sidebar dropdowns
   const [isEmpMenuOpen, setIsEmpMenuOpen] = useState(false);
   const [isAttendanceMenuOpen, setIsAttendanceMenuOpen] = useState(true); // Open by default for this page
-  // Removed type annotation for useState
-  const [activeTab, setActiveTab] = useState('Pending');
 
+  // Mock action handlers
+  const handleApprove = (id) => console.log(`Approved entry ${id}`);
+  const handleReject = (id) => console.log(`Rejected entry ${id}`);
+  
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      {/* --- SIDEBAR --- */}
+      
+      {/* --- SIDEBAR (Fixed Width) --- */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm fixed h-full z-10">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -114,7 +111,7 @@ const LeaveRequestApprovals = () => {
             <div className="space-y-1 pt-2">
               <button
                 onClick={() => setIsAttendanceMenuOpen(!isAttendanceMenuOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium group"
+                className="w-full flex items-center justify-between space-x-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium group"
               >
                 <div className="flex items-center space-x-3">
                   <ClipboardCheck className="w-5 h-5" />
@@ -124,9 +121,9 @@ const LeaveRequestApprovals = () => {
               </button>
               {isAttendanceMenuOpen && (
                 <div className="pl-11 space-y-1">
-                  <Link to="/aprove-entries" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Approve Entries</Link>
                   {/* Active Link */}
-                  <Link to="/leave-requests" className="block text-sm text-indigo-600 font-medium py-1.5">Leave Requests</Link>
+                  <Link to="/aprove-entries" className="block text-sm text-indigo-600 font-medium py-1.5">Approve Entries</Link>
+                  <Link to="/leave-request" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Leave Requests</Link>
                 </div>
               )}
             </div>
@@ -147,7 +144,7 @@ const LeaveRequestApprovals = () => {
           <Link to="/admin-profile">
             <div className="flex items-center space-x-3 mb-3">
               <img
-                src="https://i.pravatar.cc/150?u=admin_john" // Placeholder image
+                src="https://i.pravatar.cc/150?u=admin_john"
                 alt="Admin Avatar"
                 className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
               />
@@ -164,8 +161,10 @@ const LeaveRequestApprovals = () => {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
+      {/* --- MAIN CONTENT (Responsive to 960px max width) --- */}
       <main className="flex-1 ml-64 bg-gray-50">
+        
+        {/* Header - Full Width Banner */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Detailed Management View</h2>
@@ -182,85 +181,78 @@ const LeaveRequestApprovals = () => {
           </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
-          {/* Page Content Card */}
+        {/* Page Content Container (Max Width 960px equivalent on desktop) */}
+        <div className="p-8 mx-auto max-w-7xl">
+          
+          {/* Pending Attendance Approvals Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            
             {/* Card Header */}
-            <div className="px-8 py-6 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Leave Request Approvals</h3>
-                <p className="text-sm text-gray-500 mt-1">Manage employee time-off and permissions.</p>
-              </div>
-              <span className="px-3 py-1 text-xs font-medium text-orange-700 bg-orange-100 rounded-full">
-                3 Pending Requests
-              </span>
+            <div className="px-8 py-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">Pending Attendance Approvals</h3>
+              <p className="text-sm text-gray-500 mt-1">Review, adjust, and approve attendance entities with full context.</p>
             </div>
 
-            {/* Tabs & Table Container */}
+            {/* Table Container */}
             <div className="p-8">
-              {/* Tabs */}
-              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-                {/* Removed 'as const' type assertion */}
-                {['Pending', 'Approved', 'Rejected'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-                      }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
+                <table className="w-full min-w-[1000px]">
                   <thead>
                     <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-left">
                       <th className="px-6 py-3">Employee</th>
-                      <th className="px-6 py-3">Leave Details</th>
-                      <th className="px-6 py-3">Dates & Duration</th>
-                      <th className="px-6 py-3">Reason</th>
+                      <th className="px-6 py-3">Date</th>
+                      <th className="px-6 py-3">Location (GPS)</th>
+                      <th className="px-6 py-3">Time In</th>
+                      <th className="px-6 py-3">Time Out</th>
+                      <th className="px-6 py-3">Reason/Notes</th>
                       <th className="px-6 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {leaveRequestsData.map((request) => (
-                      <tr key={request.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-6 whitespace-nowrap">
+                    {pendingEntries.map((entry) => (
+                      <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <img className="w-10 h-10 rounded-full mr-4" src={request.employee.avatar} alt={request.employee.name} />
-                            <div>
-                              <div className="text-sm font-bold text-gray-900">{request.employee.name}</div>
-                              <div className="text-xs text-gray-500">Balance: {request.employee.balance}</div>
-                            </div>
+                            <img className="w-8 h-8 rounded-full mr-3" src={entry.avatar} alt={entry.name} />
+                            <div className="text-sm font-medium text-gray-900">{entry.name}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${request.leaveColor}`}>
-                            {request.leaveType}
-                          </span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{entry.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <span>{entry.location}</span>
+                            </div>
+                            <span className={`text-xs font-medium ${entry.gpsStatus.includes('Verified') ? 'text-green-600' : 'text-red-600'}`}>
+                                ({entry.gpsStatus})
+                            </span>
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{request.dates}</div>
-                          <div className="text-xs text-gray-500">{request.duration}</div>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center space-x-2">
+                            {entry.timeIn} <Clock className="w-4 h-4 text-gray-400" />
                         </td>
-                        <td className="px-6 py-6 text-sm text-gray-500 max-w-xs truncate">
-                          {request.reason}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center space-x-2">
+                            {entry.timeOut} <Clock className="w-4 h-4 text-gray-400" />
                         </td>
-                        <td className="px-6 py-6 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end space-x-3">
-                            <button className="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
+                          <input 
+                            type="text" 
+                            defaultValue={entry.reason} 
+                            className="p-2 border border-gray-200 rounded-lg w-full text-sm focus:border-indigo-500 focus:ring-0"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button 
+                              onClick={() => handleApprove(entry.id)} 
+                              className="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition-colors"
+                            >
                               <Check className="w-5 h-5" />
                             </button>
-                            <button className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors">
+                            <button 
+                              onClick={() => handleReject(entry.id)} 
+                              className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
+                            >
                               <X className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
-                              <MessageSquare className="w-5 h-5" />
                             </button>
                           </div>
                         </td>
@@ -269,13 +261,12 @@ const LeaveRequestApprovals = () => {
                   </tbody>
                 </table>
               </div>
-
-              {/* View All History Button */}
-              <button className="w-full mt-8 py-3 bg-indigo-50 text-indigo-600 font-medium rounded-xl hover:bg-indigo-100 transition-colors">
-                View All History
+              
+              <button className="w-full mt-8 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm">
+                Load More Attendance Records
               </button>
-
             </div>
+            
           </div>
         </div>
       </main>
@@ -283,4 +274,4 @@ const LeaveRequestApprovals = () => {
   );
 };
 
-export default LeaveRequestApprovals;
+export default ApproveEntries;

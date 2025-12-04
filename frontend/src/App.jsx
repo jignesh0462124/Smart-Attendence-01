@@ -17,6 +17,9 @@ import IdCreation from "./ManagerPages/IdCreation";
 import ManagerCalendar from "./ManagerPages/ManagerCalendar";
 import ManagerProfile from "./ManagerPages/ManagerProfile";
 import ViewEmployee from "./ManagerPages/ViewEmployee";
+import ApproveEntries from "./AdminPages/AproveEntries";
+import SystemSetting from "./AdminPages/SystemSetting";
+
 
 const App = () => {
   return (
@@ -38,6 +41,8 @@ const App = () => {
         <Route path="manager-calendar" element={<ManagerCalendar />} />
         <Route path="manager-profile" element={<ManagerProfile />} />
         <Route path="view-employee" element={<ViewEmployee />} />
+        <Route path="aprove-entries" element={<ApproveEntries />} />
+        <Route path="settings" element={<SystemSetting />} />
       </Routes>
     </Router>
   );

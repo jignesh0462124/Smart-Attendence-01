@@ -186,7 +186,12 @@ const AllEmployees = () => {
               </button>
               {isAttendanceMenuOpen && (
                 <div className="pl-11 space-y-1">
-                  <a href="#" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Approve Entries</a>
+                  <Link
+                    to="/aprove-entries"
+                    className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
+                  >
+                    Approve Entries
+                  </Link>
                   <Link
                     to="/leave-request"
                     className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
@@ -201,10 +206,13 @@ const AllEmployees = () => {
               <BarChart2 className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               <span>Reports & Analytics</span>
             </Link>
-            <a href="#" className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium group mt-2">
+            <Link
+              to="/settings"
+              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium group mt-2"
+            >
               <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               <span>System Settings</span>
-            </a>
+            </Link>
           </div>
         </nav>
 

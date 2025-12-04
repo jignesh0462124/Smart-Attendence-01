@@ -209,12 +209,12 @@ const AdminDashboard = () => {
               </button>
               {isAttendanceMenuOpen && (
                 <div className="pl-11 space-y-1">
-                  <a
-                    href="#"
+                   <Link
+                    to="/aprove-entries"
                     className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
                   >
                     Approve Entries
-                  </a>
+                  </Link>
                   <Link
                     to="/leave-request"
                     className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
@@ -233,13 +233,14 @@ const AdminDashboard = () => {
               <span>Reports &amp; Analytics</span>
             </Link>
 
-            <a
-              href="#"
+            <Link
+              to="/settings"
               className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium group mt-2"
             >
               <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               <span>System Settings</span>
-            </a>
+            </Link>
+
           </div>
         </nav>
 
