@@ -8,28 +8,28 @@ const AllEmployees = ({ onNavigate }) => { // Removed interface and React.FC
     const [expandedMenu, setExpandedMenu] = useState('employee');
     const navigate = useNavigate();
 
-   // Removed type annotation for parameter 'page' and map
-   const handleNavigation = (page) => {
-    if (onNavigate) {
-      onNavigate(page);
-      return;
-    }
+    // Removed type annotation for parameter 'page' and map
+    const handleNavigation = (page) => {
+        if (onNavigate) {
+            onNavigate(page);
+            return;
+        }
 
-    const map = {
-      dashboard: '/manager-dashboard',
-      attendance: '/attendance-history',
-      tasks: '/tasks',
-      notifications: '/notifications',
-      settings: '/profile',
+        const map = {
+            dashboard: '/manager-dashboard',
+            attendance: '/attendance-history',
+            tasks: '/tasks',
+            notifications: '/notifications',
+            settings: '/profile',
+        };
+
+        const path = map[page] ?? '/';
+        try {
+            navigate(path);
+        } catch (err) {
+            console.warn('Navigation failed', err, page);
+        }
     };
-
-    const path = map[page] ?? '/';
-    try {
-      navigate(path);
-    } catch (err) {
-      console.warn('Navigation failed', err, page);
-    }
-  };
 
     // Removed type annotation for parameter 'menu'
     const toggleMenu = (menu) => {
@@ -114,15 +114,15 @@ const AllEmployees = ({ onNavigate }) => { // Removed interface and React.FC
 
                 {/* Main Menu */}
                 <nav className="flex-1 p-4 overflow-y-auto">
-                          <div className="space-y-1">
-                            <button
-                              onClick={() => handleNavigation('dashboard')}
-                              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-                            >
-                              <LayoutDashboard className="w-5 h-5" />
-                              <span>Dashboard</span>
-                            </button>
-                
+                    <div className="space-y-1">
+                        <button
+                            onClick={() => handleNavigation('dashboard')}
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
+                        >
+                            <LayoutDashboard className="w-5 h-5" />
+                            <span>Dashboard</span>
+                        </button>
+
 
                         {/* Employee Management with submenu */}
                         <div>
@@ -235,10 +235,12 @@ const AllEmployees = ({ onNavigate }) => { // Removed interface and React.FC
                             <h2 className="text-2xl font-bold text-gray-900">All Employees</h2>
                         </div>
                         <div className="flex items-center space-x-3">
-                            <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                                <Bell className="w-5 h-5 text-gray-600" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
+                            <Link to="/notification">
+                                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                                    <Bell className="w-5 h-5 text-gray-600" />
+                                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                                </button>
+                            </Link>
                         </div>
                     </div>
                 </header>

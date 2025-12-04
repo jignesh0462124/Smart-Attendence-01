@@ -39,7 +39,7 @@ const AttendanceHistory = () => {
 
   // 🔐 Mock Auth guard check (replace with actual hook if needed)
   // const { isLoading: authLoading } = UseAuthGuard("/");
-  const authLoading = false; 
+  const authLoading = false;
 
   // Mock records (Removed type annotation)
   const initialRecords = [
@@ -227,10 +227,13 @@ const AttendanceHistory = () => {
                   <Moon className="w-5 h-5 text-gray-600" />
                 )}
               </button>
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              <Link to="/notification">
+                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+              </Link>
+
             </div>
           </div>
         </header>
@@ -269,21 +272,19 @@ const AttendanceHistory = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setView("list")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    view === "list"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "list"
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   List
                 </button>
                 <button
                   onClick={() => setView("calendar")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    view === "calendar"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "calendar"
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   Calendar
                 </button>
@@ -348,7 +349,7 @@ const AttendanceHistory = () => {
                       <td className="py-3 px-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-1">
                           {record.verification === "Face Scan" ||
-                          record.verification === "Geofence" ? (
+                            record.verification === "Geofence" ? (
                             <ShieldCheck className="w-4 h-4 text-green-600" />
                           ) : (
                             <span className="w-4 h-4"></span>

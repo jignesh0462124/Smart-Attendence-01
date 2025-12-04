@@ -159,10 +159,14 @@ const AdminProfile = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Detailed Management View</h2>
             <div className="flex items-center space-x-4">
+               <Link
+                            to="/notification"
+                            >
               <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <Bell className="w-6 h-6 text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
               </button>
+              </Link>
               {/* Profile button is now active (same element used in sidebar) */}
               <div className="flex items-center space-x-2 text-indigo-600 bg-indigo-50 font-medium p-1 pr-3 rounded-lg transition-colors">
                 <UserCircle className="w-6 h-6" />

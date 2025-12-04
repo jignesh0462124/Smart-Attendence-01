@@ -27,7 +27,7 @@ const LeaveManagement = () => {
 
   // 🔐 Mock Auth guard check
   // const { isLoading: authLoading } = UseAuthGuard("/");
-  const authLoading = false; 
+  const authLoading = false;
 
   // Leave balance data
   const leaveBalance = [
@@ -211,10 +211,12 @@ const LeaveManagement = () => {
               >
                 <Moon className="w-5 h-5 text-gray-600" />
               </button>
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              <Link to="/notification">
+                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+              </Link>
             </div>
           </div>
         </header>
@@ -226,9 +228,8 @@ const LeaveManagement = () => {
             {leaveBalance.map((leave, index) => (
               <div
                 key={index}
-                className={`${leave.bgColor} rounded-xl p-6 shadow-sm ${
-                  index > 0 ? "border border-gray-200" : ""
-                } flex-1`}
+                className={`${leave.bgColor} rounded-xl p-6 shadow-sm ${index > 0 ? "border border-gray-200" : ""
+                  } flex-1`}
               >
                 <p
                   className={`text-sm font-medium mb-3 ${leave.textColor} opacity-90`}
@@ -285,21 +286,19 @@ const LeaveManagement = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setDurationType("Full Day")}
-                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                          durationType === "Full Day"
+                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${durationType === "Full Day"
                             ? "bg-indigo-600 text-white"
                             : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         Full Day
                       </button>
                       <button
                         onClick={() => setDurationType("Half Day")}
-                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                          durationType === "Half Day"
+                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${durationType === "Half Day"
                             ? "bg-indigo-600 text-white"
                             : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         Half Day
                       </button>

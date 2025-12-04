@@ -62,7 +62,7 @@ const ProfilePage = ({ onNavigate }) => {
                 <span>Dashboard Overview</span>
               </div>
             </Link>
-            <button 
+            <button
               onClick={() => handleNavigation('attendance')}
               className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
             >
@@ -77,7 +77,7 @@ const ProfilePage = ({ onNavigate }) => {
               <Link to="/attendance-history" className="block text-sm text-gray-700 hover:text-gray-900">Attendance</Link>
             </div>
 
-            <button 
+            <button
               onClick={() => handleNavigation('reports')}
               className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
             >
@@ -85,7 +85,7 @@ const ProfilePage = ({ onNavigate }) => {
               <span>Reports & Analytics</span>
             </button>
 
-            <button 
+            <button
               onClick={() => handleNavigation('settings')}
               className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
             >
@@ -122,11 +122,13 @@ const ProfilePage = ({ onNavigate }) => {
               <h2 className="text-2xl font-bold text-gray-900">My Account</h2>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              
+              <Link to="/notification">
+                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+              </Link>
+
             </div>
           </div>
         </header>
@@ -138,9 +140,9 @@ const ProfilePage = ({ onNavigate }) => {
             <div className="flex items-center space-x-6 mb-8">
               <div className="relative">
                 <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <img 
-                    src="https://ui-avatars.com/api/?name=John+Admin&size=96&background=4F46E5&color=fff" 
-                    alt="Profile" 
+                  <img
+                    src="https://ui-avatars.com/api/?name=John+Admin&size=96&background=4F46E5&color=fff"
+                    alt="Profile"
                     className="w-24 h-24 rounded-full"
                   />
                 </div>
@@ -148,7 +150,7 @@ const ProfilePage = ({ onNavigate }) => {
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
-              
+
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">John Admin</h3>
                 <p className="text-indigo-600 font-medium mt-1">System Administrator</p>
@@ -174,31 +176,28 @@ const ProfilePage = ({ onNavigate }) => {
               <div className="flex space-x-8">
                 <button
                   onClick={() => setActiveTab('personal')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === 'personal'
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'personal'
                       ? 'border-indigo-600 text-indigo-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Personal Info
                 </button>
                 <button
                   onClick={() => setActiveTab('security')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === 'security'
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'security'
                       ? 'border-indigo-600 text-indigo-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Account Security
                 </button>
                 <button
                   onClick={() => setActiveTab('preferences')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === 'preferences'
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preferences'
                       ? 'border-indigo-600 text-indigo-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Preferences
                 </button>

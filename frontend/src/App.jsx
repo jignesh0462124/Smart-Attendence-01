@@ -19,7 +19,7 @@ import ManagerProfile from "./ManagerPages/ManagerProfile";
 import ViewEmployee from "./ManagerPages/ViewEmployee";
 import ApproveEntries from "./AdminPages/AproveEntries";
 import SystemSetting from "./AdminPages/SystemSetting";
-
+import Notification from "./Notification/Notification";
 
 const App = () => {
   return (
@@ -43,6 +43,7 @@ const App = () => {
         <Route path="view-employee" element={<ViewEmployee />} />
         <Route path="aprove-entries" element={<ApproveEntries />} />
         <Route path="settings" element={<SystemSetting />} />
+        <Route path="notification" element={<Notification />} />
       </Routes>
     </Router>
   );

@@ -63,10 +63,10 @@ const ApproveEntries = () => {
   // Mock action handlers
   const handleApprove = (id) => console.log(`Approved entry ${id}`);
   const handleReject = (id) => console.log(`Rejected entry ${id}`);
-  
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      
+
       {/* --- SIDEBAR (Fixed Width) --- */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm fixed h-full z-10">
         <div className="p-6 border-b border-gray-200">
@@ -163,16 +163,20 @@ const ApproveEntries = () => {
 
       {/* --- MAIN CONTENT (Responsive to 960px max width) --- */}
       <main className="flex-1 ml-64 bg-gray-50">
-        
+
         {/* Header - Full Width Banner */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Detailed Management View</h2>
             <div className="flex items-center space-x-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
+              <Link
+                to="/notification"
+              >
+                <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <Bell className="w-6 h-6 text-gray-600" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+              </Link>
               <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <UserCircle className="w-6 h-6 text-gray-400" />
                 <span>Profile</span>
@@ -183,10 +187,10 @@ const ApproveEntries = () => {
 
         {/* Page Content Container (Max Width 960px equivalent on desktop) */}
         <div className="p-8 mx-auto max-w-7xl">
-          
+
           {/* Pending Attendance Approvals Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            
+
             {/* Card Header */}
             <div className="px-8 py-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900">Pending Attendance Approvals</h3>
@@ -219,37 +223,37 @@ const ApproveEntries = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{entry.date}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                <span>{entry.location}</span>
-                            </div>
-                            <span className={`text-xs font-medium ${entry.gpsStatus.includes('Verified') ? 'text-green-600' : 'text-red-600'}`}>
-                                ({entry.gpsStatus})
-                            </span>
+                          <div className="flex items-center space-x-1">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <span>{entry.location}</span>
+                          </div>
+                          <span className={`text-xs font-medium ${entry.gpsStatus.includes('Verified') ? 'text-green-600' : 'text-red-600'}`}>
+                            ({entry.gpsStatus})
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center space-x-2">
-                            {entry.timeIn} <Clock className="w-4 h-4 text-gray-400" />
+                          {entry.timeIn} <Clock className="w-4 h-4 text-gray-400" />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center space-x-2">
-                            {entry.timeOut} <Clock className="w-4 h-4 text-gray-400" />
+                          {entry.timeOut} <Clock className="w-4 h-4 text-gray-400" />
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
-                          <input 
-                            type="text" 
-                            defaultValue={entry.reason} 
+                          <input
+                            type="text"
+                            defaultValue={entry.reason}
                             className="p-2 border border-gray-200 rounded-lg w-full text-sm focus:border-indigo-500 focus:ring-0"
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end space-x-2">
-                            <button 
-                              onClick={() => handleApprove(entry.id)} 
+                            <button
+                              onClick={() => handleApprove(entry.id)}
                               className="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition-colors"
                             >
                               <Check className="w-5 h-5" />
                             </button>
-                            <button 
-                              onClick={() => handleReject(entry.id)} 
+                            <button
+                              onClick={() => handleReject(entry.id)}
                               className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
                             >
                               <X className="w-5 h-5" />
@@ -261,12 +265,12 @@ const ApproveEntries = () => {
                   </tbody>
                 </table>
               </div>
-              
+
               <button className="w-full mt-8 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm">
                 Load More Attendance Records
               </button>
             </div>
-            
+
           </div>
         </div>
       </main>
