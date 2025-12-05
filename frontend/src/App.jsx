@@ -20,6 +20,12 @@ import ViewEmployee from "./ManagerPages/ViewEmployee";
 import ApproveEntries from "./AdminPages/AproveEntries";
 import SystemSetting from "./AdminPages/SystemSetting";
 import Notification from "./Notification/Notification";
+import CompanyCalendar from "./Calender/CompanyCalendar";
+import Task from "./ManagerPages/Task";
+import SendNotification from "./ManagerPages/SendNotification";
+import ManualAttendance from "./ManagerPages/Manualattendance";
+import LeaveRequestAndApprovel from "./ManagerPages/LeaveRequestAndApprovel";
+import MyAttendanceHistory from "./ManagerPages/ManagerAttendanceHistory";
 
 const App = () => {
   return (
@@ -34,10 +40,16 @@ const App = () => {
         <Route path="all-employees" element={<AllEmployee />} />
         <Route path="leave-request" element={<LeaveRequest />} />
         <Route path="reportsandanalytics" element={<ReportAndAnalysis />} />
+        <Route path="calendar" element={<CompanyCalendar />} />
         <Route path="attendance-history" element={<AttendanceHistory />} />
         <Route path="leave" element={<EmployeeLeave />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="id-creation" element={<IdCreation />} />
+        <Route path="tasks" element={<Task />} />
+        <Route path="send-notification" element={<SendNotification />} />
+        <Route path="manual-attendance" element={<ManualAttendance />} />
+        <Route path="manager-attendance-history" element={<MyAttendanceHistory />} />
+        <Route path="leave-approvel" element={<LeaveRequestAndApprovel />} />
         <Route path="manager-calendar" element={<ManagerCalendar />} />
         <Route path="manager-profile" element={<ManagerProfile />} />
         <Route path="view-employee" element={<ViewEmployee />} />

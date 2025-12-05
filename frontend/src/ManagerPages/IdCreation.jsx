@@ -124,7 +124,14 @@ const CreateEmployeeID = ({ onNavigate }) => { // Removed interface and React.FC
                             <CheckSquare className="w-5 h-5" />
                             <span>Tasks</span>
                         </button>
-
+                        <Link
+                            to="/send-notification"
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
+                        >
+                            <CheckSquare className="w-5 h-5" />
+                            <span>Send Notification</span>
+                        </Link>
+            
                         {/* Attendance with submenu */}
                         <div>
                             <button
@@ -143,12 +150,12 @@ const CreateEmployeeID = ({ onNavigate }) => { // Removed interface and React.FC
                                     <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
                                         Manual Attendance Marking
                                     </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
-                                        View Logs
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
-                                        My Attendance History
-                                    </button>
+                                
+                                    <Link
+                                                      to="/manager-attendance-history"
+                                                      className="w-full block text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
+                                                        <span>My Attendance History</span>
+                                                      </Link>
                                 </div>
                             )}
                         </div>
@@ -160,14 +167,9 @@ const CreateEmployeeID = ({ onNavigate }) => { // Removed interface and React.FC
                             <Calendar className="w-5 h-5" />
                             <span>Calendar</span>
                         </Link>
+                        
 
-                        <button
-                            onClick={() => handleNavigation('settings')}
-                            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-                        >
-                            <Settings className="w-5 h-5" />
-                            <span>Settings</span>
-                        </button>
+                        
                     </div>
                 </nav>
 

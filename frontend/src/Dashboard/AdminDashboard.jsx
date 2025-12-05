@@ -174,9 +174,8 @@ const AdminDashboard = () => {
                   <span>Employee Management</span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform ${
-                    isEmpMenuOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 text-gray-400 transition-transform ${isEmpMenuOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
               {isEmpMenuOpen && (
@@ -202,14 +201,13 @@ const AdminDashboard = () => {
                   <span>Attendance &amp; Leave</span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform ${
-                    isAttendanceMenuOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 text-gray-400 transition-transform ${isAttendanceMenuOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
               {isAttendanceMenuOpen && (
                 <div className="pl-11 space-y-1">
-                   <Link
+                  <Link
                     to="/aprove-entries"
                     className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
                   >
@@ -278,15 +276,15 @@ const AdminDashboard = () => {
             </h2>
             <div className="flex items-center space-x-4">
               <Link to="/notification">
-              <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
+                <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <Bell className="w-6 h-6 text-gray-600" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
               </Link>
-              <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <Link to="/admin-profile" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <UserCircle className="w-6 h-6 text-gray-400" />
                 <span>Profile</span>
-              </button>
+              </Link>
             </div>
           </div>
         </header>

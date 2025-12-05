@@ -62,16 +62,16 @@ const SystemSettings = () => {
   // Simple handler for checkbox/toggle changes
   const handleToggleChange = (name, value) => {
     setSecuritySettings(prev => ({
-        ...prev,
-        [name]: value
+      ...prev,
+      [name]: value
     }));
   };
-  
+
   // Simple handler for notification checkboxes
   const handleNotificationChange = (e) => {
     setNotificationSettings({
-        ...notificationSettings,
-        [e.target.name]: e.target.checked
+      ...notificationSettings,
+      [e.target.name]: e.target.checked
     });
   };
 
@@ -82,7 +82,7 @@ const SystemSettings = () => {
   const renderGeneralTab = () => (
     <div className="space-y-8 pt-4">
       <h4 className="text-lg font-bold text-gray-800 border-b pb-3 mb-4">Company Details</h4>
-      
+
       {/* Company Name & Support Email */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -106,7 +106,7 @@ const SystemSettings = () => {
           />
         </div>
       </div>
-      
+
       {/* Website & Fiscal Year Start */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -166,9 +166,9 @@ const SystemSettings = () => {
           </select>
         </div>
       </div>
-      
+
       <div className="pt-6">
-        <button 
+        <button
           onClick={() => console.log('Saving General Settings:', generalSettings)}
           className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
         >
@@ -187,12 +187,12 @@ const SystemSettings = () => {
           <p className="text-sm text-gray-500 mt-1">Require all administrators to use 2FA for login.</p>
         </div>
         <button
-            onClick={() => handleToggleChange('twoFactorAuth', !securitySettings.twoFactorAuth)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${securitySettings.twoFactorAuth ? 'bg-indigo-600' : 'bg-gray-200'}`}
+          onClick={() => handleToggleChange('twoFactorAuth', !securitySettings.twoFactorAuth)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${securitySettings.twoFactorAuth ? 'bg-indigo-600' : 'bg-gray-200'}`}
         >
-            <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${securitySettings.twoFactorAuth ? 'translate-x-6' : 'translate-x-1'}`}
-            />
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${securitySettings.twoFactorAuth ? 'translate-x-6' : 'translate-x-1'}`}
+          />
         </button>
       </div>
 
@@ -203,7 +203,7 @@ const SystemSettings = () => {
           <p className="text-sm text-gray-500 mt-1">Enable Google Workspace or Azure AD login.</p>
         </div>
         <button className="text-indigo-600 font-medium hover:text-indigo-800 text-sm">
-            Configure
+          Configure
         </button>
       </div>
 
@@ -211,23 +211,23 @@ const SystemSettings = () => {
       <div className="pb-5">
         <h4 className="text-base font-semibold text-gray-900 mb-3">Session Timeout</h4>
         <div className="w-56">
-            <select
-              name="sessionTimeout"
-              value={securitySettings.sessionTimeout}
-              onChange={(e) => handleToggleChange('sessionTimeout', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-            >
-                <option>15 Minutes</option>
-                <option>30 Minutes</option>
-                <option>1 Hour</option>
-                <option>Never</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-2">Automatically log out inactive users.</p>
+          <select
+            name="sessionTimeout"
+            value={securitySettings.sessionTimeout}
+            onChange={(e) => handleToggleChange('sessionTimeout', e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+          >
+            <option>15 Minutes</option>
+            <option>30 Minutes</option>
+            <option>1 Hour</option>
+            <option>Never</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-2">Automatically log out inactive users.</p>
         </div>
       </div>
-      
+
       <div className="pt-6">
-        <button 
+        <button
           onClick={() => console.log('Saving Security Policy:', securitySettings)}
           className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
         >
@@ -243,8 +243,8 @@ const SystemSettings = () => {
 
       {/* Email Admin Leave Request */}
       <div className="flex items-start space-x-3">
-        <input 
-          id="emailAdminLeaveRequest" 
+        <input
+          id="emailAdminLeaveRequest"
           type="checkbox"
           name="emailAdminLeaveRequest"
           checked={notificationSettings.emailAdminLeaveRequest}
@@ -258,8 +258,8 @@ const SystemSettings = () => {
 
       {/* Send Weekly Attendance Reports */}
       <div className="flex items-start space-x-3">
-        <input 
-          id="sendWeeklyAttendance" 
+        <input
+          id="sendWeeklyAttendance"
           type="checkbox"
           name="sendWeeklyAttendance"
           checked={notificationSettings.sendWeeklyAttendance}
@@ -273,8 +273,8 @@ const SystemSettings = () => {
 
       {/* Notify Holidays */}
       <div className="flex items-start space-x-3">
-        <input 
-          id="notifyPublicHolidays" 
+        <input
+          id="notifyPublicHolidays"
           type="checkbox"
           name="notifyPublicHolidays"
           checked={notificationSettings.notifyPublicHolidays}
@@ -285,9 +285,9 @@ const SystemSettings = () => {
           Notify all employees of public holidays 2 days in advance.
         </label>
       </div>
-      
+
       <div className="pt-6">
-        <button 
+        <button
           onClick={() => console.log('Saving Notification Preferences:', notificationSettings)}
           className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
         >
@@ -307,15 +307,15 @@ const SystemSettings = () => {
       <p className="text-gray-600 max-w-sm">
         You are currently on the <span className="font-semibold text-indigo-600">Enterprise Plan</span>. Your next billing date is Nov 01, 2024.
       </p>
-      
+
       <div className="flex space-x-4 mt-6">
-        <button 
+        <button
           onClick={() => console.log('View Invoices')}
           className="px-6 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors shadow-sm"
         >
           View Invoices
         </button>
-        <button 
+        <button
           onClick={() => console.log('Upgrade Plan')}
           className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
         >
@@ -343,7 +343,7 @@ const SystemSettings = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      
+
       {/* --- SIDEBAR (Fixed Width) --- */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm fixed h-full z-10">
         <div className="p-6 border-b border-gray-200">
@@ -439,34 +439,34 @@ const SystemSettings = () => {
 
       {/* --- MAIN CONTENT (Responsive to 960px max width) --- */}
       <main className="flex-1 ml-64 bg-gray-50">
-        
+
         {/* Header - Full Width Banner */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Detailed Management View</h2>
             <div className="flex items-center space-x-4">
               <Link
-              to="/notification"
+                to="/notification"
               >
-              <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
+                <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <Bell className="w-6 h-6 text-gray-600" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
               </Link>
-              <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <Link to="/admin-profile" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <UserCircle className="w-6 h-6 text-gray-400" />
                 <span>Profile</span>
-              </button>
+              </Link>
             </div>
           </div>
         </header>
 
         {/* Page Content Container (Max Width 960px equivalent on desktop) */}
         <div className="p-8 mx-auto max-w-7xl">
-          
+
           {/* System Configuration Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            
+
             {/* Title and Description */}
             <div className="mb-8">
               <h3 className="text-xl font-bold text-gray-900">System Configuration</h3>
@@ -480,11 +480,10 @@ const SystemSettings = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`pb-3 text-sm font-medium transition-colors ${
-                      activeTab === tab
+                    className={`pb-3 text-sm font-medium transition-colors ${activeTab === tab
                         ? 'border-b-2 border-indigo-600 text-indigo-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>
@@ -496,7 +495,7 @@ const SystemSettings = () => {
             <div className="p-4">
               {renderActiveTabContent()}
             </div>
-            
+
           </div>
         </div>
       </main>

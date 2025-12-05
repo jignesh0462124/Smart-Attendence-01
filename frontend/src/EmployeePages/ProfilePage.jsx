@@ -53,46 +53,46 @@ const ProfilePage = ({ onNavigate }) => {
           <p className="text-xs text-gray-400 mt-1">Advanced Management</p>
         </div>
 
-        {/* Main Menu */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-1">
-            <Link to="/employee-dashboard">
-              <div className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm">
-                <TrendingUp className="w-5 h-5" />
-                <span>Dashboard Overview</span>
-              </div>
-            </Link>
-            <button
-              onClick={() => handleNavigation('attendance')}
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Attendance & Leave</span>
-            </button>
-
-            <div className="pl-8 space-y-1 mt-1">
-              <Link to="/leave" className="block text-sm text-gray-700 hover:text-gray-900">Leaves</Link>
-            </div>
-            <div className="pl-8 space-y-1 mt-1">
-              <Link to="/attendance-history" className="block text-sm text-gray-700 hover:text-gray-900">Attendance</Link>
-            </div>
-
-            <button
-              onClick={() => handleNavigation('reports')}
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-            >
-              <FileText className="w-5 h-5" />
-              <span>Reports & Analytics</span>
-            </button>
-
-            <button
-              onClick={() => handleNavigation('settings')}
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-            >
-              <Settings className="w-5 h-5" />
-              <span>System Settings</span>
-            </button>
-          </div>
+         {/* Main Menu */}
+                <nav className="flex-1 p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    Main Menu
+                  </p>
+                  <div className="space-y-1">
+                    <Link
+                      to="/employee-dashboard"
+                      className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
+                    >
+                      <TrendingUp className="w-5 h-5" />
+                      <span>Dashboard</span>
+                    </Link>
+                    <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left">
+                      <FolderOpen className="w-5 h-5" />
+                      <span>Attendance History</span>
+                    </button>
+                    <Link
+                      to="/leave"
+                      className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span>Leaves</span>
+                    </Link>
+                    <Link
+                      to="/calendar"
+                      className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                    >
+                      <Calendar className="w-5 h-5" />
+                      <span>Calendar</span>
+                    </Link>
+                  </div>
+        
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-3">
+                    Support
+                  </p>
+                  <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left">
+                    <HelpCircle className="w-5 h-5" />
+                    <span>Helpdesk</span>
+                  </button>
         </nav>
 
         {/* User Profile */}

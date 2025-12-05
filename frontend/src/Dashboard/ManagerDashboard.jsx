@@ -240,6 +240,13 @@ const ManagerDashboard = () => {
               <CheckSquare className="w-5 h-5" />
               <span>Tasks</span>
             </button>
+            <Link
+              to="/send-notification"
+              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
+            >
+              <CheckSquare className="w-5 h-5" />
+              <span>Send Notification</span>
+            </Link>
 
             {/* Attendance with submenu */}
             <div>
@@ -259,26 +266,28 @@ const ManagerDashboard = () => {
 
               {expandedMenu === "attendance" && (
                 <div className="ml-8 mt-1 space-y-1">
-                  <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
-                    Manual Attendance Marking
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
-                    Leave Requests
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
-                    My Attendance History
-                  </button>
+                  <Link
+                  to="/manual-attendance"
+                  className="w-full block text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
+                    <span>Manual Attendance Marking</span>
+                  </Link>
+              
+                  <Link
+                  to="/manager-attendance-history"
+                  className="w-full block text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
+                    <span>My Attendance History</span>
+                  </Link>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={() => handleNavigation("notifications")}
+            <Link
+            to="/leave-approvel"
               className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
             >
               <Bell className="w-5 h-5" />
-              <span>Leave Approvals</span>
-            </button>
+              <span>Leave request and Approvals</span>
+            </Link>
 
             <Link
               to="/manager-calendar"
@@ -288,13 +297,7 @@ const ManagerDashboard = () => {
               <span>Calendar</span>
             </Link>
 
-            <button
-              onClick={() => handleNavigation("settings")}
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left text-sm"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </button>
+            
           </div>
         </nav>
 

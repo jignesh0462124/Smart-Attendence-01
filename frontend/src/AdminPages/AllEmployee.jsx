@@ -240,23 +240,19 @@ const AllEmployees = () => {
 
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 ml-64 bg-gray-50">
-        {/* Header */}
+        {/* Header - Full Width Banner */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Detailed Management View</h2>
             <div className="flex items-center space-x-4">
-              <Link
-                to="/notification"
-              >
-                <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <Bell className="w-6 h-6 text-gray-600" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-              </Link>
-              <button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Bell className="w-6 h-6 text-gray-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+              </button>
+              <Link to="/admin-profile" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <UserCircle className="w-6 h-6 text-gray-400" />
                 <span>Profile</span>
-              </button>
+              </Link>
             </div>
           </div>
         </header>
