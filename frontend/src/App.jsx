@@ -26,6 +26,7 @@ import SendNotification from "./ManagerPages/SendNotification";
 import ManualAttendance from "./ManagerPages/Manualattendance";
 import LeaveRequestAndApprovel from "./ManagerPages/LeaveRequestAndApprovel";
 import MyAttendanceHistory from "./ManagerPages/ManagerAttendanceHistory";
+import AdminLogin from "./AdminPages/AdminLogin";
 
 const App = () => {
   return (
@@ -56,6 +57,7 @@ const App = () => {
         <Route path="aprove-entries" element={<ApproveEntries />} />
         <Route path="settings" element={<SystemSetting />} />
         <Route path="notification" element={<Notification />} />
+        <Route path="admin-login" element={<AdminLogin />} />
       </Routes>
     </Router>
   );

@@ -1,281 +1,330 @@
-// src/pages/Landing.jsx
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  CheckCircle2, 
+  Menu, 
+  X, 
+  Users, 
+  MapPin, 
+  BarChart3, 
+  ShieldCheck, 
+  Smartphone, 
+  Clock,
+  ArrowRight
+} from "lucide-react";
+
+// Placeholder for your image - ensure this path is correct
 import heroImage from "./img/img1.png";
 
-export default function Landing() {
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top bar */}
-      <header className="border-b border-slate-100 bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <div className="text-lg font-semibold tracking-tight text-slate-900">
-            SmartAttend
-          </div>
+// --- Components ---
 
-          <button
-            onClick={() => (window.location.href = "/signup")}
-            className="hidden sm:inline-flex items-center rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-slate-900 shadow-md shadow-yellow-400/40 hover:bg-yellow-300 transition"
-          >
-            Get Started
-          </button>
+const SectionHeader = ({ title, subtitle, center = true }) => (
+  <div className={`mb-12 ${center ? "text-center" : "text-left"}`}>
+    <motion.h2 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight"
+    >
+      {title}
+    </motion.h2>
+    <motion.p 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.1 }}
+      className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto"
+    >
+      {subtitle}
+    </motion.p>
+  </div>
+);
+
+const FeatureCard = ({ icon: Icon, title, description, delay }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay }}
+    className="group relative p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity" />
+    <div className="relative z-10">
+      <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+        <Icon size={24} />
+      </div>
+      <h3 className="text-xl font-semibold text-slate-900 mb-2">{title}</h3>
+      <p className="text-slate-600 leading-relaxed">{description}</p>
+    </div>
+  </motion.div>
+);
+
+export default function Landing() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Background pattern for visual texture
+  const bgPattern = {
+    backgroundImage: `radial-gradient(#cbd5e1 1px, transparent 1px)`,
+    backgroundSize: '32px 32px',
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
+      
+      {/* --- NAVIGATION --- */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20">
+                S
+              </div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                SmartAttend
+              </span>
+            </div>
+
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-8">
+              {['Features', 'How it Works', 'Pricing', 'About'].map((item) => (
+                <a key={item} href={`#${item.toLowerCase().replace(/\s/g, '-')}`} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                  {item}
+                </a>
+              ))}
+            </nav>
+
+            {/* CTA Button */}
+            <div className="hidden md:flex items-center gap-4">
+              <a href="/signup" className="text-sm font-medium text-slate-600 hover:text-slate-900"></a>
+              <button 
+                onClick={() => window.location.href = "/signup"}
+                className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
+              >
+                Get Started
+              </button>
+            </div>
+
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="md:hidden p-2 text-slate-600"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-slate-100 bg-white"
+            >
+              <div className="space-y-1 px-4 py-4">
+                {['Features', 'How it Works', 'Pricing', 'Login'].map((item) => (
+                  <a key={item} href="#" className="block rounded-lg px-3 py-2 text-base font-semibold text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                    {item}
+                  </a>
+                ))}
+                <button className="mt-4 w-full rounded-lg bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white">
+                  Get Started
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
-      <main className="flex-1">
-        {/* HERO */}
-        <section className="bg-slate-50">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20 grid gap-10 lg:grid-cols-2 items-center">
-            {/* Left */}
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 mb-5 border border-blue-100">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                <span className="text-[11px] font-medium text-slate-600">
-                  New: Smart Geofencing
-                </span>
-              </div>
+      <main className="flex-1 overflow-hidden">
+        
+        {/* --- HERO SECTION --- */}
+        <section className="relative pt-12 pb-20 lg:pt-24 lg:pb-32 overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute inset-0 -z-10 h-full w-full bg-slate-50" style={bgPattern}></div>
+          <div className="absolute top-0 right-0 -z-10 translate-x-1/3 -translate-y-1/4 opacity-30 blur-3xl">
+            <div className="h-[600px] w-[600px] rounded-full bg-blue-400"></div>
+          </div>
+          <div className="absolute bottom-0 left-0 -z-10 -translate-x-1/3 translate-y-1/4 opacity-30 blur-3xl">
+            <div className="h-[600px] w-[600px] rounded-full bg-yellow-200"></div>
+          </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-tight">
-                Track Team
-                <br />
-                Attendance with <span className="text-blue-600">Precision</span>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            {/* Left Content */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+                Attendance Tracking, <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Reimagined.</span>
               </h1>
 
-              <p className="mt-4 text-sm sm:text-base text-slate-600 max-w-xl">
-                Real-time tracking, facial recognition, and geofencing. The
-                all-in-one workforce management platform.
+              <p className="mt-6 text-lg text-slate-600 max-w-lg leading-relaxed">
+                Eliminate manual errors with geofencing, facial recognition, and real-time analytics. The smartest way to manage your modern workforce.
               </p>
-            </div>
+            </motion.div>
 
-            {/* Right illustration block with image + floating cards */}
-            <div className="relative flex justify-center">
-              <div className="relative w-full max-w-md">
-                {/* Floating top badge */}
-                <div className="absolute -top-6 left-6 z-20">
-                  <div className="flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-[11px] shadow-xl shadow-slate-300/60">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-600">
-                      ●
-                    </span>
-                    <div>
-                      <p className="font-semibold text-slate-800">
-                        Geofence Active
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        5 employees nearby
-                      </p>
-                    </div>
+            {/* Right Visual */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative mx-auto w-full max-w-lg lg:max-w-none"
+            >
+              {/* Decorative elements */}
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="absolute -top-12 -right-8 z-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium">Status</p>
+                    <p className="text-sm font-bold text-slate-900">All Systems Active</p>
                   </div>
                 </div>
+              </motion.div>
 
-                {/* Main card with hero image */}
-                <div className="relative rounded-3xl bg-white shadow-2xl shadow-slate-300/70 overflow-hidden border border-slate-100 pt-5 pb-6 px-5">
-                  <div className="mb-2 text-right text-xs font-semibold text-slate-700">
-                    Daily Attendance
-                  </div>
-                  <div className="rounded-2xl overflow-hidden bg-yellow-50">
-                    <img
-                      src={heroImage}
-                      alt="Smart attendance dashboard"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              {/* Main Image Container */}
+              <div className="relative rounded-3xl bg-slate-900 p-2 shadow-2xl shadow-blue-900/20">
+                <div className="relative rounded-2xl overflow-hidden bg-slate-800 aspect-[4/3] border border-slate-700/50">
+                  <img 
+                    src={heroImage} 
+                    alt="Dashboard Preview" 
+                    className="h-full w-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                  />
+                  {/* Overlay Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
                 </div>
-
-                {/* Floating bottom badge */}
-                <div className="absolute -bottom-5 right-6 z-20">
-                  <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-[11px] shadow-2xl shadow-slate-300/80">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-yellow-600">
-                      3
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-800">
-                        Late Arrivals
-                      </p>
-                      <p className="text-[10px] text-slate-500">This week</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Soft glow behind card */}
-                <div className="pointer-events-none absolute inset-0 -z-10 blur-3xl bg-gradient-to-tr from-blue-200/40 via-transparent to-yellow-200/60" />
               </div>
-            </div>
+
+              {/* Bottom Badge */}
+              <motion.div 
+                animate={{ y: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                className="absolute -bottom-6 -left-6 z-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 max-w-[200px]"
+              >
+                 <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-500">Attendance</span>
+                    <span className="text-xs font-bold text-green-500">+12%</span>
+                 </div>
+                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full w-[85%] bg-blue-500 rounded-full"></div>
+                 </div>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
-        {/* HOW IT WORKS */}
-        <section className="bg-white">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900">
-                How Smart Attendance Works
-              </h2>
-              <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-xl mx-auto">
-                Three simple steps to transform your attendance tracking.
-              </p>
+        {/* --- LOGO CLOUD --- */}
+        {/* --- FEATURES GRID --- */}
+        <section id="features" className="py-20 lg:py-32 bg-slate-50 relative">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHeader 
+              title="Everything you need to run your team" 
+              subtitle="Replace your spreadsheets and biometric hardware with a single, modern platform."
+            />
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <FeatureCard 
+                icon={MapPin}
+                title="Smart Geofencing"
+                description="Define work zones on a map. Employees can only check in when they are physically at the location."
+                delay={0.1}
+              />
+              <FeatureCard 
+                icon={Smartphone}
+                title="Face Recognition"
+                description="Touchless, fraud-proof attendance using AI-powered face verification on any mobile device."
+                delay={0.2}
+              />
+              <FeatureCard 
+                icon={BarChart3}
+                title="Real-time Insights"
+                description="Visualize late arrivals, overtime, and absenteeism with beautiful, interactive dashboards."
+                delay={0.3}
+              />
+              <FeatureCard 
+                icon={Clock}
+                title="Shift Management"
+                description="Create complex rotating shifts and assign them to departments with a drag-and-drop interface."
+                delay={0.4}
+              />
+              <FeatureCard 
+                icon={ShieldCheck}
+                title="Device Lock"
+                description="Restrict check-ins to specific company devices or IP addresses for maximum security."
+                delay={0.5}
+              />
+              <FeatureCard 
+                icon={Users}
+                title="Leave Management"
+                description="Automated leave requests and approvals tailored to your company's specific policies."
+                delay={0.6}
+              />
             </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {/* Card 1 */}
-              <div className="rounded-3xl bg-gradient-to-b from-slate-50 to-slate-100 p-6 shadow-sm shadow-slate-200 border border-slate-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white">
-                    1
-                  </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                    <span className="text-lg">👥</span>
-                  </div>
-                </div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-2">
-                  Onboard your team
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  Import employees, assign departments and shifts. Set up custom
-                  work schedules and policies in minutes.
-                </p>
-              </div>
-
-              {/* Card 2 */}
-              <div className="rounded-3xl bg-gradient-to-b from-rose-50 to-rose-100 p-6 shadow-sm shadow-rose-100 border border-rose-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-500 text-xs font-semibold text-white">
-                    2
-                  </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-100 text-purple-600">
-                    <span className="text-lg">😊</span>
-                  </div>
-                </div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-2">
-                  Choose check-in method
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  Enable face recognition, mobile GPS, or web check-in. Multiple
-                  verification methods for maximum flexibility.
-                </p>
-              </div>
-
-              {/* Card 3 */}
-              <div className="rounded-3xl bg-gradient-to-b from-emerald-50 to-emerald-100 p-6 shadow-sm shadow-emerald-100 border border-emerald-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-xs font-semibold text-white">
-                    3
-                  </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                    <span className="text-lg">📈</span>
-                  </div>
-                </div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-2">
-                  Get real-time insights
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  Access live dashboards, automated alerts, and comprehensive
-                  reports. Make data-driven decisions instantly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* COMPREHENSIVE SUITE */}
-        <section className="bg-slate-50">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3">
-              Comprehensive Tracking Suite
-            </h2>
-            <p className="text-sm sm:text-base text-slate-500 max-w-xl mx-auto">
-              Everything you need to manage your workforce efficiently.
-            </p>
           </div>
         </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-950 text-slate-300 pt-10 pb-6">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 md:grid-cols-4 mb-8">
-            {/* Brand column */}
+      {/* --- FOOTER --- */}
+      <footer className="bg-white border-t border-slate-200 pt-16 pb-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
+            <div className="col-span-2 lg:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">S</div>
+                <span className="text-xl font-bold text-slate-900">SmartAttend</span>
+              </div>
+              <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
+                The next generation of workforce management. Precision tracking, automated insights, and seamless integration.
+              </p>
+            </div>
+            
+            {/* Footer Links */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500 text-white text-lg font-bold">
-                  S
-                </div>
-                <span className="text-sm font-semibold text-white">
-                  SmartAttend
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 max-w-xs">
-                The all-in-one workforce management platform for modern teams.
-              </p>
-
-              <div className="mt-4 flex gap-3 text-slate-400">
-                <button className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-xs hover:text-white hover:bg-slate-800">
-                  X
-                </button>
-                <button className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-xs hover:text-white hover:bg-slate-800">
-                  in
-                </button>
-                <button className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-xs hover:text-white hover:bg-slate-800">
-                  f
-                </button>
-              </div>
+              <h4 className="font-bold text-slate-900 mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><a href="#" className="hover:text-blue-600">Features</a></li>
+                <li><a href="#" className="hover:text-blue-600">Pricing</a></li>
+                <li><a href="#" className="hover:text-blue-600">API</a></li>
+              </ul>
             </div>
-
-            {/* Product */}
-            <div className="text-xs space-y-2">
-              <h4 className="text-slate-200 font-semibold mb-1">Product</h4>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Features
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Pricing
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Security
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Integrations
-              </p>
+            <div>
+              <h4 className="font-bold text-slate-900 mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><a href="#" className="hover:text-blue-600">About</a></li>
+                <li><a href="#" className="hover:text-blue-600">Blog</a></li>
+                <li><a href="#" className="hover:text-blue-600">Careers</a></li>
+              </ul>
             </div>
-
-            {/* Company */}
-            <div className="text-xs space-y-2">
-              <h4 className="text-slate-200 font-semibold mb-1">Company</h4>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                About Us
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Careers
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Blog
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Press Kit
-              </p>
-            </div>
-
-            {/* Support */}
-            <div className="text-xs space-y-2">
-              <h4 className="text-slate-200 font-semibold mb-1">Support</h4>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Help Center
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Contact Us
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Privacy Policy
-              </p>
-              <p className="cursor-pointer text-slate-400 hover:text-white">
-                Terms of Service
-              </p>
+            <div>
+              <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><a href="#" className="hover:text-blue-600">Privacy</a></li>
+                <li><a href="#" className="hover:text-blue-600">Terms</a></li>
+                <li><a href="#" className="hover:text-blue-600">Security</a></li>
+              </ul>
             </div>
           </div>
-
-          <div className="border-t border-slate-800 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
-            <p>© 2024 SmartAttend. All rights reserved.</p>
-            <p>
-              Made with <span className="text-pink-400">♥</span> for smart
-              teams.
-            </p>
+          
+          <div className="border-t border-slate-100 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-slate-500">© 2025 SmartAttend Inc. All rights reserved.</p>
+            <div className="flex gap-4">
+              {/* Social placeholders */}
+              <div className="h-5 w-5 bg-slate-200 rounded-full hover:bg-slate-300 cursor-pointer"></div>
+              <div className="h-5 w-5 bg-slate-200 rounded-full hover:bg-slate-300 cursor-pointer"></div>
+              <div className="h-5 w-5 bg-slate-200 rounded-full hover:bg-slate-300 cursor-pointer"></div>
+            </div>
           </div>
         </div>
       </footer>

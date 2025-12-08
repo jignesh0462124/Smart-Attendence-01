@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabase/supabase.js";
 import { useNavigate } from "react-router-dom";
+import img1 from "./img1/img1.png";
 
 export default function Signup() {
   // Router navigation
@@ -44,20 +45,39 @@ export default function Signup() {
     setView(newView);
   };
 
-  // 🔔 When user clicks reset link from email, Supabase fires PASSWORD_RECOVERY
+  // ✅ CRITICAL FIX: Handle Auth State Changes & Redirects
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    // Check initial session (in case user clicked email link and page just loaded)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // If there is a session, wait a moment to see if it's a password recovery
+        // If not recovery, it's a login/signup verification -> go to dashboard
+        // We handle the specific redirect in onAuthStateChange below
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth Event:", event);
+
       if (event === "PASSWORD_RECOVERY") {
         resetMessages();
         setView("updatePassword");
+      } 
+      else if (event === "SIGNED_IN") {
+        // ✅ If user clicked "Confirm Email", they are now Signed In.
+        // We check if the view is NOT updatePassword (to avoid redirecting during reset flow)
+        if (view !== "updatePassword") {
+          console.log("User signed in/verified, redirecting...");
+          navigate("/employee-dashboard");
+        }
       }
     });
 
     return () => {
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [view, navigate]);
 
   // ---------- Supabase handlers ----------
 
@@ -85,8 +105,8 @@ export default function Signup() {
 
       console.log("Login success:", data);
       setSuccessMsg("Logged in successfully.");
-
-      // ✅ Navigate to Employee Dashboard after successful login
+      
+      // Navigation is handled by onAuthStateChange, but we can double ensure here:
       navigate("/employee-dashboard");
     } catch (err) {
       console.error(err);
@@ -116,6 +136,12 @@ export default function Signup() {
     try {
       setLoading(true);
 
+      // ✅ CRITICAL FIX: emailRedirectTo
+      // We explicitly tell Supabase to send the user back to THIS page (not Landing)
+      // window.location.origin is "http://localhost:5173"
+      // window.location.pathname is "/signup" (or wherever this is mounted)
+      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
@@ -123,6 +149,8 @@ export default function Signup() {
           data: {
             full_name: signupName,
           },
+          // This ensures they come back here, not to the landing page
+          emailRedirectTo: redirectUrl, 
         },
       });
 
@@ -133,12 +161,12 @@ export default function Signup() {
 
       console.log("Signup success:", data);
       setSuccessMsg(
-        "Account created. Please check your email to verify your account."
+        "Account created! Please check your email to verify your account."
       );
 
-      // ⬇️ After signup, automatically switch to LOGIN view
+      // After signup, we can show a success state or switch to login
       setView("login");
-      setLoginEmail(signupEmail); // prefill login with same email
+      setLoginEmail(signupEmail); 
     } catch (err) {
       console.error(err);
       setErrorMsg("Signup failed. Please try again.");
@@ -147,7 +175,7 @@ export default function Signup() {
     }
   };
 
-  // Send reset email → redirect back to SAME page (this component)
+  // Send reset email
   const handleResetSubmit = async (e) => {
     e.preventDefault();
     resetMessages();
@@ -160,7 +188,7 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      // same route as current page (e.g. /signup or /auth)
+      // ✅ CRITICAL FIX: ensure reset comes back here too
       const redirectUrl = `${window.location.origin}${window.location.pathname}`;
 
       const { data, error } = await supabase.auth.resetPasswordForEmail(
@@ -216,14 +244,10 @@ export default function Signup() {
         "Password updated successfully. Please login with your new password."
       );
 
-      // Clean local state
       setNewPassword("");
       setNewPasswordConfirm("");
 
-      // Optionally sign out recovery session
-      await supabase.auth.signOut();
-
-      // ⬇️ Go back to LOGIN view in SAME component
+      // Go back to LOGIN view
       setView("login");
     } catch (err) {
       console.error(err);
@@ -259,13 +283,7 @@ export default function Signup() {
 
           <div className="mt-10">
             <div className="bg-[#f5f7ff] rounded-3xl p-6 flex items-center justify-center">
-              {/* Replace this with your illustration image */}
-              {/* <img src={yourImage} alt="SmartAttend" className="w-full h-auto" /> */}
-              <div className="text-center text-blue-700 font-medium">
-                Illustration / Graphic
-                <br />
-                (add image here)
-              </div>
+              <img src={img1} alt="SmartAttend" className="w-full h-auto" />
             </div>
           </div>
         </div>

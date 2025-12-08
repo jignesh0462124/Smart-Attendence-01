@@ -209,12 +209,6 @@ const EmployeeDashboard = () => {
       subtitle: "Annual leaves remaining",
       icon: "🔑",
     },
-    {
-      title: "Next Holiday",
-      value: "Diwali",
-      subtitle: "Nov 12 - 5 days to go",
-      icon: "🎉",
-    },
   ];
 
   const announcements = [
@@ -517,82 +511,9 @@ const EmployeeDashboard = () => {
               </div>
             </div>
 
-            {/* Announcements and Who's Away */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {/* Announcements */}
-              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 flex items-center">
-                    <span className="mr-2">📢</span>
-                    Announcements
-                  </h3>
-                  <button className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    View All
-                  </button>
-                </div>
-                <div className="space-y-3 sm:space-y-4">
-                  {announcements.map((announcement, index) => (
-                    <div
-                      key={index}
-                      className="border-l-4 border-indigo-500 bg-gray-50 p-3 sm:p-4 rounded-r-lg"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
-                          {announcement.title}
-                        </h4>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded whitespace-nowrap ml-2 ${announcement.dateColor}`}
-                        >
-                          {announcement.date}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600">
-                        {announcement.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Who's Away */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
-                  Who&apos;s Away
-                </h3>
-                <div className="space-y-3 sm:space-y-4">
-                  {whosAway.map((person, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div
-                        className={`w-10 h-10 ${person.color} rounded-full flex items-center justify-center text-white font-semibold text-sm`}
-                      >
-                        {person.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {person.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{person.leave}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button className="w-full mt-4 text-center text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                  View Team Calendar
-                </button>
-              </div>
-            </div>
-
             {/* Recent Attendance (static demo) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900">
-                    Recent Attendance
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                    A brief overview of your last few days.
-                  </p>
-                </div>
                 <Link
                   to="/attendance-history"
                   className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium"
