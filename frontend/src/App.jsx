@@ -27,6 +27,8 @@ import ManualAttendance from "./ManagerPages/Manualattendance";
 import LeaveRequestAndApprovel from "./ManagerPages/LeaveRequestAndApprovel";
 import MyAttendanceHistory from "./ManagerPages/ManagerAttendanceHistory";
 import AdminLogin from "./AdminPages/AdminLogin";
+import SuperLogin from "./SuperAdmin/SuperLogin.jsx";
+import SuperDashboard from "./SuperAdmin/SuperDashboard.jsx"; 
 
 const App = () => {
   return (
@@ -58,6 +60,8 @@ const App = () => {
         <Route path="settings" element={<SystemSetting />} />
         <Route path="notification" element={<Notification />} />
         <Route path="admin-login" element={<AdminLogin />} />
+        <Route path="super-login" element={<SuperLogin />} />
+        <Route path="super-dashboard" element={<SuperDashboard />} />
       </Routes>
     </Router>
   );
