@@ -88,21 +88,82 @@ export async function getAdmins() {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
-// Add new admin
-export async function addAdmin({ email, name, phone }) {
+/**
+ * Add new admin:
+ * 1) Create Supabase Auth user (email + password)
+ * 2) Restore SuperAdmin session
+ * 3) Insert into admins table with generated admin_uid
+ *
+ * @param {{ email: string, name: string, phone?: string, password: string }} param0
+ */
+export async function addAdmin({ email, name, phone, password }) {
+  // Save current SuperAdmin session so we can restore it after signUp
+  const { data: sessionData, error: sessionError } =
+    await supabase.auth.getSession();
+  if (sessionError) {
+    console.error("Error getting current session:", sessionError);
+    throw new Error("Failed to read current session.");
+  }
+
+  const originalSession = sessionData?.session || null;
+
+  // 1) Create auth user for this admin (login credentials)
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (signUpError) {
+    console.error("Error creating auth user for admin:", signUpError);
+    throw new Error(
+      signUpError.message || "Failed to create admin auth account."
+    );
+  }
+
+  const newAdminAuthUser = signUpData.user;
+
+  // 2) Restore original SuperAdmin session (so dashboard stays logged in)
+  if (originalSession) {
+    const { error: restoreError } = await supabase.auth.setSession({
+      access_token: originalSession.access_token,
+      refresh_token: originalSession.refresh_token,
+    });
+
+    if (restoreError) {
+      console.error("Error restoring SuperAdmin session:", restoreError);
+      // not fatal for admin creation, so don't throw here
+    }
+  } else {
+    // No original session (very unlikely in this flow), nothing to restore
+  }
+
+  // 3) Create admin record in admins table
   const admin_uid = generateAdminUid();
 
-  const { data, error } = await supabase
+  const { data: adminRow, error: adminError } = await supabase
     .from("admins")
-    .insert([{ admin_uid, email, name, phone }])
+    .insert([
+      {
+        admin_uid,
+        email,
+        name,
+        phone,
+        // If in future you add auth_uid to admins table, you can include:
+        // auth_uid: newAdminAuthUser.id,
+      },
+    ])
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (adminError) {
+    console.error("Error creating admin row:", adminError);
+    throw new Error(adminError.message || "Failed to create admin record.");
+  }
+
+  return { admin: adminRow, authUser: newAdminAuthUser };
 }
 
 // Update existing admin (gmail / name / phone are dynamic)
@@ -114,6 +175,10 @@ export async function updateAdmin(id, { email, name, phone }) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error updating admin:", error);
+    throw new Error(error.message || "Failed to update admin.");
+  }
+
   return data;
 }

@@ -1,13 +1,13 @@
-// src/pages/superadmin/SuperDashboard.jsx
+// src/SuperAdmin/SuperDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../supabase/supabase.js";
+import { supabase } from "../../supabase/supabase"; // ⬅️ adjust path if needed
 import {
   getCurrentUser,
   getAdmins,
   addAdmin,
   updateAdmin,
-} from "./super.js";
+} from "./super";
 
 const SuperDashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +21,7 @@ const SuperDashboard = () => {
     email: "",
     name: "",
     phone: "",
+    password: "",
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -49,6 +50,12 @@ const SuperDashboard = () => {
         setAdmins(list);
       } catch (err) {
         console.error(err);
+        // If not superadmin, go to login
+        if (err.message === "You are not authorized as SuperAdmin.") {
+          setErrorMsg(err.message);
+          navigate("/super-login");
+          return;
+        }
         setErrorMsg(err.message || "Failed to load dashboard.");
       } finally {
         setLoadingPage(false);
@@ -90,17 +97,22 @@ const SuperDashboard = () => {
     setActionMsg("");
 
     try {
-      const { email, name, phone } = createForm;
+      const { email, name, phone, password } = createForm;
       if (!email || !name) {
         setErrorMsg("Email and Name are required.");
         return;
       }
+      if (!password || password.length < 6) {
+        setErrorMsg("Password is required and must be at least 6 characters.");
+        return;
+      }
 
-      await addAdmin({ email, name, phone });
+      await addAdmin({ email, name, phone, password });
       setActionMsg("Admin created successfully.");
-      setCreateForm({ email: "", name: "", phone: "" });
+      setCreateForm({ email: "", name: "", phone: "", password: "" });
       await refreshAdmins();
     } catch (err) {
+      console.error(err);
       setErrorMsg(err.message || "Failed to create admin.");
     }
   };
@@ -138,6 +150,7 @@ const SuperDashboard = () => {
       setEditForm({ email: "", name: "", phone: "" });
       await refreshAdmins();
     } catch (err) {
+      console.error(err);
       setErrorMsg(err.message || "Failed to update admin.");
     }
   };
@@ -160,7 +173,8 @@ const SuperDashboard = () => {
           </h1>
           {superUser && (
             <p className="mt-1 text-xs text-slate-400">
-              Logged in as <span className="font-medium">{superUser.email}</span>
+              Logged in as{" "}
+              <span className="font-medium">{superUser.email}</span>
             </p>
           )}
         </div>
@@ -198,8 +212,9 @@ const SuperDashboard = () => {
           <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/40">
             <h2 className="text-lg font-semibold mb-1">Add New Admin</h2>
             <p className="text-xs text-slate-400 mb-4">
-              Create a new admin with a unique admin ID. Gmail, name, and phone number
-              can be updated later by the SuperAdmin.
+              Create a new admin with a unique admin ID. Gmail, name, phone and
+              password will be used for admin login. SuperAdmin can later update
+              Gmail, name and phone.
             </p>
 
             <form className="space-y-4" onSubmit={handleCreateAdmin}>
@@ -251,6 +266,26 @@ const SuperDashboard = () => {
                              text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 
                              focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Password (for Admin login)
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={createForm.password}
+                  onChange={handleCreateChange}
+                  placeholder="Enter a strong password"
+                  required
+                  className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs md:text-sm 
+                             text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 
+                             focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Minimum 6 characters. Share this with the admin so they can log in.
+                </p>
               </div>
 
               <button

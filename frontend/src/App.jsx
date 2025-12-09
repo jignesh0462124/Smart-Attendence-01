@@ -28,40 +28,234 @@ import LeaveRequestAndApprovel from "./ManagerPages/LeaveRequestAndApprovel";
 import MyAttendanceHistory from "./ManagerPages/ManagerAttendanceHistory";
 import AdminLogin from "./AdminPages/AdminLogin";
 import SuperLogin from "./SuperAdmin/SuperLogin.jsx";
-import SuperDashboard from "./SuperAdmin/SuperDashboard.jsx"; 
+import SuperDashboard from "./SuperAdmin/SuperDashboard.jsx";
+
+// 🔒 import your auth guard hook (change path if needed)
+import { useAuthGuard } from "./Authentication/useAuthGuard.jsx";
+
+// 🔒 simple wrapper component to protect routes
+const ProtectedRoute = ({ children, redirectTo = "/admin-login" }) => {
+  const { user, loading } = useAuthGuard({ redirectTo });
+
+  if (loading) {
+    return <div>Checking session...</div>; // you can replace with a loader UI
+  }
+
+  // If not logged in, useAuthGuard already redirected, just render nothing
+  if (!user) return null;
+
+  return children;
+};
 
 const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="signup" element={<Signup />} />
-        <Route path="employee-dashboard" element={<EmployeeDashboard />} />
-        <Route path="admin-dashboard" element={<AdminDashboard />} />
-        <Route path="manager-dashboard" element={<ManagerDashboard />} />
-        <Route path="admin-profile" element={<AdminProfile />} />
-        <Route path="all-employees" element={<AllEmployee />} />
-        <Route path="leave-request" element={<LeaveRequest />} />
-        <Route path="reportsandanalytics" element={<ReportAndAnalysis />} />
-        <Route path="calendar" element={<CompanyCalendar />} />
-        <Route path="attendance-history" element={<AttendanceHistory />} />
-        <Route path="leave" element={<EmployeeLeave />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="id-creation" element={<IdCreation />} />
-        <Route path="tasks" element={<Task />} />
-        <Route path="send-notification" element={<SendNotification />} />
-        <Route path="manual-attendance" element={<ManualAttendance />} />
-        <Route path="manager-attendance-history" element={<MyAttendanceHistory />} />
-        <Route path="leave-approvel" element={<LeaveRequestAndApprovel />} />
-        <Route path="manager-calendar" element={<ManagerCalendar />} />
-        <Route path="manager-profile" element={<ManagerProfile />} />
-        <Route path="view-employee" element={<ViewEmployee />} />
-        <Route path="aprove-entries" element={<ApproveEntries />} />
-        <Route path="settings" element={<SystemSetting />} />
-        <Route path="notification" element={<Notification />} />
         <Route path="admin-login" element={<AdminLogin />} />
         <Route path="super-login" element={<SuperLogin />} />
-        <Route path="super-dashboard" element={<SuperDashboard />} />
+
+        {/* Protected: Employee */}
+        <Route
+          path="employee-dashboard"
+          element={
+            <ProtectedRoute>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="attendance-history"
+          element={
+            <ProtectedRoute>
+              <AttendanceHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="leave"
+          element={
+            <ProtectedRoute>
+              <EmployeeLeave />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected: Admin */}
+        <Route
+          path="admin-dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin-profile"
+          element={
+            <ProtectedRoute>
+              <AdminProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="all-employees"
+          element={
+            <ProtectedRoute>
+              <AllEmployee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="leave-request"
+          element={
+            <ProtectedRoute>
+              <LeaveRequest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="reportsandanalytics"
+          element={
+            <ProtectedRoute>
+              <ReportAndAnalysis />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="aprove-entries"
+          element={
+            <ProtectedRoute>
+              <ApproveEntries />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <ProtectedRoute>
+              <SystemSetting />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notification"
+          element={
+            <ProtectedRoute>
+              <Notification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="calendar"
+          element={
+            <ProtectedRoute>
+              <CompanyCalendar />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected: Manager */}
+        <Route
+          path="manager-dashboard"
+          element={
+            <ProtectedRoute>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="id-creation"
+          element={
+            <ProtectedRoute>
+              <IdCreation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="tasks"
+          element={
+            <ProtectedRoute>
+              <Task />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="send-notification"
+          element={
+            <ProtectedRoute>
+              <SendNotification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="manual-attendance"
+          element={
+            <ProtectedRoute>
+              <ManualAttendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="manager-attendance-history"
+          element={
+            <ProtectedRoute>
+              <MyAttendanceHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="leave-approvel"
+          element={
+            <ProtectedRoute>
+              <LeaveRequestAndApprovel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="manager-calendar"
+          element={
+            <ProtectedRoute>
+              <ManagerCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="manager-profile"
+          element={
+            <ProtectedRoute>
+              <ManagerProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="view-employee"
+          element={
+            <ProtectedRoute>
+              <ViewEmployee />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected: Super Admin */}
+        <Route
+          path="super-dashboard"
+          element={
+            <ProtectedRoute redirectTo="/super-login">
+              <SuperDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
