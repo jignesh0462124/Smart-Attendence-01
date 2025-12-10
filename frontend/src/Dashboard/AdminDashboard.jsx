@@ -1,5 +1,5 @@
 // src/Admin/AdminDashboard.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -17,8 +17,8 @@ import {
   Clock,
   Briefcase,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuthGuard } from "../Authentication/useAuthGuard.jsx"; // ✅ auth guard hook
+import { Link, useNavigate } from "react-router-dom";
+import { getCurrentAdmin, signOutAdmin } from "../AdminPages/Admin.js";
 
 // --- MOCK DATA FOR THE ADMIN DASHBOARD ---
 
@@ -109,14 +109,59 @@ const todaysLogs = [
 ];
 
 const AdminDashboard = () => {
-  // ✅ Auth guard: if not logged in, user is redirected to /auth
-  const { user, loading } = useAuthGuard({ redirectTo: "/signup" });
+  const navigate = useNavigate();
 
-  // State for UI elements
+  // Auth/Admin state
+  const [loading, setLoading] = useState(true);
+  const [authUser, setAuthUser] = useState(null); // Supabase auth user
+  const [admin, setAdmin] = useState(null);       // Row from public.admins
+  const [authError, setAuthError] = useState("");
+
+  // UI state
   const [isEmpMenuOpen, setIsEmpMenuOpen] = useState(false);
-  const [isAttendanceMenuOpen, setIsAttendanceMenuOpen] = useState(true); // Open by default
+  const [isAttendanceMenuOpen, setIsAttendanceMenuOpen] = useState(true);
 
-  // 🔄 Loader while checking auth (fast, minimal)
+  // On mount: fetch current admin info via Admin.js
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      try {
+        setLoading(true);
+        setAuthError("");
+
+        const result = await getCurrentAdmin(); // from Admin.js
+
+        if (!result) {
+          // Not logged in OR not admin -> redirect to admin login
+          navigate("/admin-login", { replace: true });
+          return;
+        }
+
+        setAuthUser(result.user);
+        setAdmin(result.admin);
+      } catch (error) {
+        console.error("Error fetching current admin:", error);
+        setAuthError("Failed to verify admin access.");
+        // Optional: redirect or keep here with error
+        navigate("/admin-login", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdmin();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOutAdmin(); // from Admin.js
+      localStorage.removeItem("adminInfo");
+      navigate("/admin-login", { replace: true });
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
+  // Loader while checking auth
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -128,9 +173,10 @@ const AdminDashboard = () => {
     );
   }
 
-  // If loading is false and user is null, we've already navigated to /auth
-  // due to useAuthGuard, so we can safely render nothing here.
-  if (!user) return null;
+  // If not admin, we will already have redirected. Just in case:
+  if (!authUser || !admin) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -174,8 +220,9 @@ const AdminDashboard = () => {
                   <span>Employee Management</span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isEmpMenuOpen ? "rotate-180" : ""
-                    }`}
+                  className={`w-4 h-4 text-gray-400 transition-transform ${
+                    isEmpMenuOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {isEmpMenuOpen && (
@@ -186,9 +233,12 @@ const AdminDashboard = () => {
                   >
                     All Employees
                   </Link>
-                  <Link to="/id-creation" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">
-                                                        <span>Employee ID Creation</span>
-                                                      </Link>
+                  <Link
+                    to="/id-creation"
+                    className="block text-sm text-gray-500 hover:text-gray-700 py-1.5"
+                  >
+                    <span>Employee ID Creation</span>
+                  </Link>
                 </div>
               )}
             </div>
@@ -204,8 +254,9 @@ const AdminDashboard = () => {
                   <span>Attendance &amp; Leave</span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isAttendanceMenuOpen ? "rotate-180" : ""
-                    }`}
+                  className={`w-4 h-4 text-gray-400 transition-transform ${
+                    isAttendanceMenuOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {isAttendanceMenuOpen && (
@@ -241,7 +292,6 @@ const AdminDashboard = () => {
               <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               <span>System Settings</span>
             </Link>
-
           </div>
         </nav>
 
@@ -250,19 +300,24 @@ const AdminDashboard = () => {
           <Link to="/admin-profile">
             <div className="flex items-center space-x-3 mb-3">
               <img
-                src="https://i.pravatar.cc/150?u=admin_john"
+                src="https://i.pravatar.cc/150?u=admin_avatar"
                 alt="Admin Avatar"
                 className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-900">
-                  {user.user_metadata?.full_name || "John Admin"}
+                  {admin?.name || "Admin User"}
                 </p>
-                <p className="text-xs text-gray-500">Administrator</p>
+                <p className="text-xs text-gray-500">
+                  {admin?.email || "admin@example.com"}
+                </p>
               </div>
             </div>
           </Link>
-          <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium w-full px-2 py-1 rounded hover:bg-gray-100 transition-colors">
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium w-full px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+          >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
           </button>
@@ -274,9 +329,14 @@ const AdminDashboard = () => {
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-20">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Detailed Management View
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Detailed Management View
+              </h2>
+              {authError && (
+                <p className="text-xs text-red-500 mt-1">{authError}</p>
+              )}
+            </div>
             <div className="flex items-center space-x-4">
               <Link to="/notification">
                 <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -284,9 +344,12 @@ const AdminDashboard = () => {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
               </Link>
-              <Link to="/admin-profile" className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <Link
+                to="/admin-profile"
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 font-medium p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <UserCircle className="w-6 h-6 text-gray-400" />
-                <span>Profile</span>
+                <span>{admin?.name || "Profile"}</span>
               </Link>
             </div>
           </div>

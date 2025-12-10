@@ -1,15 +1,16 @@
 // src/Authentication/AdminLogin.jsx
 import React, { useState } from "react";
-import { supabase } from "../../supabase/supabase.js";
 import { useNavigate } from "react-router-dom";
-// Ensure you have an image for the admin portal or reuse existing
-import adminImg from "./img1/img1.png"; 
+
+import { signInAdmin } from "./Admin.js";
+import adminImg from "./img1/img1.png";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   // UI State
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -20,46 +21,30 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      // 1. Perform Authentication
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      // 1. Admin authentication + role verification (from Admin.js)
+      const { user, admin } = await signInAdmin(email, password);
 
-      if (authError) throw authError;
+      console.log("Admin Auth User:", user);
+      console.log("Admin Row:", admin);
 
-      if (authData.session) {
-        // 2. Security Check: Verify Role in Database
-        // We must check if this user is actually an Admin or Super Admin
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", authData.user.id)
-          .single();
+      // 2. Optional: store admin data locally for quick access in UI
+      localStorage.setItem(
+        "adminInfo",
+        JSON.stringify({
+          auth_uid: user.id,          // Supabase auth user ID
+          id: admin.id,               // internal admins table ID
+          admin_uid: admin.admin_uid, // human-readable ID (e.g. ADM-000001)
+          email: admin.email,
+          name: admin.name,
+          phone: admin.phone,
+        })
+      );
 
-        if (profileError) {
-          throw new Error("Error fetching user profile.");
-        }
-
-        const role = profileData?.role;
-
-        // 3. Routing Logic based on Hierarchy
-        if (role === "super_admin") {
-          console.log("Super Admin Verified");
-          navigate("/super-admin/dashboard");
-        } 
-        else if (role === "admin") {
-          console.log("Admin Verified");
-          navigate("/admin/dashboard");
-        } 
-        else {
-          // If role is 'employee', deny access to Admin Portal
-          await supabase.auth.signOut();
-          setErrorMsg("Access Denied: You are not authorized as an Administrator.");
-        }
-      }
+      // 3. Navigate to Admin Dashboard
+      // Make sure your Route path matches this (e.g. <Route path="/admin-dashboard" ... />)
+      navigate("/admin-dashboard");
     } catch (error) {
-      console.error("Login Error:", error);
+      console.error("Admin Login Error:", error);
       setErrorMsg(error.message || "Invalid login credentials.");
     } finally {
       setLoading(false);
@@ -69,7 +54,6 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        
         {/* Left Panel - Visuals */}
         <div className="bg-slate-900 text-white p-10 flex flex-col justify-between relative overflow-hidden">
           <div className="z-10 relative">
@@ -78,13 +62,17 @@ export default function AdminLogin() {
               Authorized personnel only. Manage teams, monitor attendance, and system configurations.
             </p>
           </div>
-          
+
           {/* Decorative Circle */}
-          <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-blue-600 rounded-full opacity-20 blur-2xl"></div>
-          <div className="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-purple-600 rounded-full opacity-20 blur-3xl"></div>
+          <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-blue-600 rounded-full opacity-20 blur-2xl" />
+          <div className="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-purple-600 rounded-full opacity-20 blur-3xl" />
 
           <div className="mt-8 z-10 flex justify-center">
-             <img src={adminImg} alt="Admin Panel" className="w-3/4 opacity-90 drop-shadow-2xl" />
+            <img
+              src={adminImg}
+              alt="Admin Panel"
+              className="w-3/4 opacity-90 drop-shadow-2xl"
+            />
           </div>
         </div>
 
@@ -92,7 +80,9 @@ export default function AdminLogin() {
         <div className="p-10 flex flex-col justify-center">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-800">Login</h2>
-            <p className="text-sm text-slate-500">Sign in to the administration dashboard.</p>
+            <p className="text-sm text-slate-500">
+              Sign in to the administration dashboard.
+            </p>
           </div>
 
           {errorMsg && (
@@ -141,11 +131,13 @@ export default function AdminLogin() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-slate-400">
-              Not an admin? <a href="/login" className="text-blue-600 hover:underline">Go to Employee Login</a>
+              Not an admin?{" "}
+              <a href="/login" className="text-blue-600 hover:underline">
+                Go to Employee Login
+              </a>
             </p>
           </div>
         </div>
-
       </div>
     </div>
   );
