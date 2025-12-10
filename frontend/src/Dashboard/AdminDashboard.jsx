@@ -186,6 +186,9 @@ const AdminDashboard = () => {
                   >
                     All Employees
                   </Link>
+                  <Link to="/id-creation" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">
+                                                        <span>Employee ID Creation</span>
+                                                      </Link>
                 </div>
               )}
             </div>

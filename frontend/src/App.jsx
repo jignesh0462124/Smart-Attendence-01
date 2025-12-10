@@ -13,7 +13,7 @@ import ReportAndAnalysis from "./AdminPages/ReportAndAnalysis";
 import AttendanceHistory from "./EmployeePages/AttendanceHistory";
 import EmployeeLeave from "./EmployeePages/EmployeeLeave";
 import ProfilePage from "./EmployeePages/ProfilePage";
-import IdCreation from "./ManagerPages/IdCreation";
+import EmployeeIdCreation from "./AdminPages/EmployeeIdCreation";
 import ManagerCalendar from "./ManagerPages/ManagerCalendar";
 import ManagerProfile from "./ManagerPages/ManagerProfile";
 import ViewEmployee from "./ManagerPages/ViewEmployee";
@@ -32,6 +32,7 @@ import SuperDashboard from "./SuperAdmin/SuperDashboard.jsx";
 
 // 🔒 import your auth guard hook (change path if needed)
 import { useAuthGuard } from "./Authentication/useAuthGuard.jsx";
+import CreateEmployeeID from "./AdminPages/EmployeeIdCreation.jsx";
 
 // 🔒 simple wrapper component to protect routes
 const ProtectedRoute = ({ children, redirectTo = "/admin-login" }) => {
@@ -109,6 +110,14 @@ const App = () => {
           }
         />
         <Route
+          path="id-creation"
+          element={
+            <ProtectedRoute>
+              <EmployeeIdCreation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="all-employees"
           element={
             <ProtectedRoute>
@@ -174,14 +183,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="id-creation"
-          element={
-            <ProtectedRoute>
-              <IdCreation />
-            </ProtectedRoute>
-          }
-        />
+        
         <Route
           path="tasks"
           element={

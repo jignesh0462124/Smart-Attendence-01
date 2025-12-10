@@ -127,8 +127,8 @@ const CreateEmployeeID = ({ onNavigate }) => {
                             </button>
                             {isAttendanceMenuOpen && (
                                 <div className="pl-11 space-y-1">
-                                    <Link to="/approve-entries" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Approve Entries</Link>
-                                    <Link to="/leave-requests" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Leave Requests</Link>
+                                    <Link to="/aprove-entries" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Approve Entries</Link>
+                                    <Link to="/leave-request" className="block text-sm text-gray-500 hover:text-gray-700 py-1.5">Leave Requests</Link>
                                 </div>
                             )}
                         </div>
