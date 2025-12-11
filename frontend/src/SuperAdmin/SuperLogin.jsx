@@ -10,7 +10,8 @@ const SuperLogin = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -19,10 +20,15 @@ const SuperLogin = () => {
     setLoading(true);
 
     try {
-      await superAdminLogin(form.email, form.password);
+      // trim email to avoid accidental spaces
+      const result = await superAdminLogin(form.email.trim(), form.password);
+      // result contains user, session, superAdmin
+      // Optionally persist parts of result to context/store here
       navigate("/super-dashboard");
     } catch (err) {
-      setErrorMsg(err.message || "Login failed");
+      // Normalize error message
+      const message = err?.message ? err.message : String(err);
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }

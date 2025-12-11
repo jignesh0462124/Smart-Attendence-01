@@ -1,7 +1,6 @@
 // src/Authentication/AdminLogin.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { signInAdmin } from "./Admin.js";
 import adminImg from "./img1/img1.png";
 
@@ -9,6 +8,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
+  const [adminUid, setAdminUid] = useState(""); // Admin ID
   const [password, setPassword] = useState("");
 
   // UI State
@@ -21,27 +21,34 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      // 1. Admin authentication + role verification (from Admin.js)
-      const { user, admin } = await signInAdmin(email, password);
+      if (!email || !password || !adminUid) {
+        throw new Error("Please enter email, password and Admin ID.");
+      }
 
-      console.log("Admin Auth User:", user);
-      console.log("Admin Row:", admin);
+      // Debug log (remove in production)
+      console.log("Admin login attempt:", {
+        email,
+        adminUid,
+        passwordLength: password.length,
+      });
 
-      // 2. Optional: store admin data locally for quick access in UI
+      // 1. Admin authentication + role verification
+      const { user, admin } = await signInAdmin(email, password, adminUid);
+
+      // Persist minimal admin info locally (you may use context/store instead)
       localStorage.setItem(
         "adminInfo",
         JSON.stringify({
-          auth_uid: user.id,          // Supabase auth user ID
-          id: admin.id,               // internal admins table ID
-          admin_uid: admin.admin_uid, // human-readable ID (e.g. ADM-000001)
+          auth_uid: user.id,
+          id: admin.id,
+          admin_uid: admin.admin_uid,
           email: admin.email,
           name: admin.name,
           phone: admin.phone,
         })
       );
 
-      // 3. Navigate to Admin Dashboard
-      // Make sure your Route path matches this (e.g. <Route path="/admin-dashboard" ... />)
+      // 2. Navigate to Admin Dashboard
       navigate("/admin-dashboard");
     } catch (error) {
       console.error("Admin Login Error:", error);
@@ -59,11 +66,11 @@ export default function AdminLogin() {
           <div className="z-10 relative">
             <h1 className="text-3xl font-bold mb-2">Admin Portal</h1>
             <p className="text-slate-400">
-              Authorized personnel only. Manage teams, monitor attendance, and system configurations.
+              Authorized personnel only. Manage teams, monitor attendance, and
+              system configurations.
             </p>
           </div>
 
-          {/* Decorative Circle */}
           <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-blue-600 rounded-full opacity-20 blur-2xl" />
           <div className="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-purple-600 rounded-full opacity-20 blur-3xl" />
 
@@ -92,6 +99,7 @@ export default function AdminLogin() {
           )}
 
           <form onSubmit={handleAdminLogin} className="space-y-5">
+            {/* Admin Email */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Admin Email
@@ -106,6 +114,25 @@ export default function AdminLogin() {
               />
             </div>
 
+            {/* Admin ID */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Admin ID
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                placeholder="ADM-000001"
+                value={adminUid}
+                onChange={(e) => setAdminUid(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Use the Admin ID assigned to you (e.g. ADM-284139).
+              </p>
+            </div>
+
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Password
@@ -123,7 +150,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-slate-900 text-white py-3 rounded- lg font-semibold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Verifying Credentials..." : "Access Dashboard"}
             </button>
@@ -132,7 +159,7 @@ export default function AdminLogin() {
           <div className="mt-6 text-center">
             <p className="text-xs text-slate-400">
               Not an admin?{" "}
-              <a href="/login" className="text-blue-600 hover:underline">
+              <a href="/signup" className="text-blue-600 hover:underline">
                 Go to Employee Login
               </a>
             </p>

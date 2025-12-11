@@ -18,11 +18,10 @@ import {
   Briefcase,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getCurrentAdmin, signOutAdmin } from "../AdminPages/Admin.js";
+import { supabase } from "../../supabase/supabase.js";
+import { getCurrentAdmin, signOutAdmin } from "../AdminPages/Admin.js"; // adjust path if needed
 
-// --- MOCK DATA FOR THE ADMIN DASHBOARD ---
-
-// Stats Cards Data
+// --- STATS CARDS DATA (still static for now) ---
 const adminStats = [
   {
     title: "Total Employees",
@@ -54,74 +53,25 @@ const adminStats = [
   },
 ];
 
-// Today's Logs Table Data
-const todaysLogs = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    avatar: "https://i.pravatar.cc/150?u=sarah",
-    department: "Engineering",
-    checkIn: "09:00 AM",
-    checkOut: "06:00 PM",
-    status: "Present",
-    statusColor: "bg-green-100 text-green-700",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    avatar: "https://i.pravatar.cc/150?u=michael",
-    department: "Marketing",
-    checkIn: "--",
-    checkOut: "--",
-    status: "Absent",
-    statusColor: "bg-red-100 text-red-700",
-  },
-  {
-    id: 3,
-    name: "Jessica Lee",
-    avatar: "https://i.pravatar.cc/150?u=jessica",
-    department: "HR",
-    checkIn: "09:15 AM",
-    checkOut: "05:45 PM",
-    status: "Present",
-    statusColor: "bg-green-100 text-green-700",
-  },
-  {
-    id: 4,
-    name: "Chris Evans",
-    avatar: "https://i.pravatar.cc/150?u=chris",
-    department: "Sales",
-    checkIn: "10:30 AM",
-    checkOut: "02:30 PM",
-    status: "Half Day",
-    statusColor: "bg-yellow-100 text-yellow-700",
-  },
-  {
-    id: 5,
-    name: "David Wilson",
-    avatar: "https://i.pravatar.cc/150?u=david",
-    department: "Logistics",
-    checkIn: "--",
-    checkOut: "--",
-    status: "On Leave",
-    statusColor: "bg-orange-100 text-orange-700",
-  },
-];
-
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
   // Auth/Admin state
   const [loading, setLoading] = useState(true);
   const [authUser, setAuthUser] = useState(null); // Supabase auth user
-  const [admin, setAdmin] = useState(null);       // Row from public.admins
+  const [admin, setAdmin] = useState(null); // Row from public.admins
   const [authError, setAuthError] = useState("");
+
+  // Attendance state
+  const [attendanceRows, setAttendanceRows] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
 
   // UI state
   const [isEmpMenuOpen, setIsEmpMenuOpen] = useState(false);
   const [isAttendanceMenuOpen, setIsAttendanceMenuOpen] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // On mount: fetch current admin info via Admin.js
+  // --- 1. On mount: fetch current admin info via Admin.js ---
   useEffect(() => {
     const fetchAdmin = async () => {
       try {
@@ -141,7 +91,6 @@ const AdminDashboard = () => {
       } catch (error) {
         console.error("Error fetching current admin:", error);
         setAuthError("Failed to verify admin access.");
-        // Optional: redirect or keep here with error
         navigate("/admin-login", { replace: true });
       } finally {
         setLoading(false);
@@ -150,6 +99,41 @@ const AdminDashboard = () => {
 
     fetchAdmin();
   }, [navigate]);
+
+  // --- 2. Once we know admin, load attendance for this admin_uid ---
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!admin?.admin_uid) return;
+
+      try {
+        setAttendanceLoading(true);
+
+        const { data, error } = await supabase
+          .from("attendance")
+          .select(
+            "id, full_name, email, marked_at, type, latitude, longitude, photo_url"
+          )
+          .eq("admin_uid", admin.admin_uid)
+          .order("marked_at", { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.error("Error fetching attendance:", error);
+          return;
+        }
+
+        setAttendanceRows(data || []);
+      } catch (err) {
+        console.error("Unexpected attendance fetch error:", err);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    if (admin) {
+      fetchAttendance();
+    }
+  }, [admin]);
 
   const handleLogout = async () => {
     try {
@@ -160,6 +144,35 @@ const AdminDashboard = () => {
       console.error("Error during logout:", error);
     }
   };
+
+  // Helper: badge style based on type
+  const getStatusBadge = (type) => {
+    if (type === "clock_in") {
+      return {
+        label: "Clock In",
+        classes: "bg-green-100 text-green-700",
+      };
+    }
+    if (type === "clock_out") {
+      return {
+        label: "Clock Out",
+        classes: "bg-blue-100 text-blue-700",
+      };
+    }
+    return {
+      label: "Unknown",
+      classes: "bg-gray-100 text-gray-700",
+    };
+  };
+
+  // Filtered rows by search term (name or email)
+  const filteredRows = attendanceRows.filter((row) => {
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return true;
+    const name = (row.full_name || "").toLowerCase();
+    const email = (row.email || "").toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   // Loader while checking auth
   if (loading) {
@@ -336,6 +349,9 @@ const AdminDashboard = () => {
               {authError && (
                 <p className="text-xs text-red-500 mt-1">{authError}</p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                Admin ID: {admin.admin_uid}
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/notification">
@@ -363,7 +379,7 @@ const AdminDashboard = () => {
               Employee Attendance Overview
             </h3>
             <p className="text-gray-500 text-sm mt-1">
-              Real-time attendance tracking for today.
+              Real-time attendance tracking for your employees.
             </p>
           </div>
 
@@ -389,12 +405,12 @@ const AdminDashboard = () => {
             ))}
           </div>
 
-          {/* Today's Logs Section */}
+          {/* Attendance Logs Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             {/* Section Header with Search and Filter */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
               <h3 className="text-lg font-bold text-gray-900">
-                Today&apos;s Logs
+                Latest Attendance Logs
               </h3>
               <div className="flex items-center space-x-3">
                 {/* Search Input */}
@@ -404,9 +420,11 @@ const AdminDashboard = () => {
                     type="text"
                     placeholder="Search employee..."
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                {/* Filter Button */}
+                {/* Filter Button (UI only for now) */}
                 <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 flex items-center">
                   <Filter className="w-4 h-4 mr-2" />
                   Filter
@@ -415,111 +433,115 @@ const AdminDashboard = () => {
             </div>
 
             {/* Logs Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
-                <thead>
-                  <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-left">
-                    <th className="px-4 py-3">Employee Name</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Check In</th>
-                    <th className="px-4 py-3">Check Out</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {todaysLogs.map((log) => (
-                    <tr
-                      key={log.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img
-                            className="w-8 h-8 rounded-full mr-3"
-                            src={log.avatar}
-                            alt={log.name}
-                          />
-                          <span className="text-sm font-medium text-gray-900">
-                            {log.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.department}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.checkIn}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.checkOut}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <span
-                          className={`px-2.5 py-1 text-xs font-medium rounded-full ${log.statusColor}`}
-                        >
-                          {log.status === "Present" && "● "}
-                          {log.status === "Absent" && "● "}
-                          {log.status === "Half Day" && "● "}
-                          {log.status === "On Leave" && "● "}
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-gray-400 hover:text-indigo-600 mx-1">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="lucide lucide-eye"
-                          >
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
-                        <button className="text-gray-400 hover:text-indigo-600 mx-1">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="lucide lucide-pencil"
-                          >
-                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                            <path d="m15 5 4 4" />
-                          </svg>
-                        </button>
-                      </td>
+            {attendanceLoading ? (
+              <div className="py-8 flex justify-center items-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500">
+                    Loading attendance records...
+                  </p>
+                </div>
+              </div>
+            ) : filteredRows.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No attendance records found for your employees yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[800px]">
+                  <thead>
+                    <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-left">
+                      <th className="px-4 py-3">Employee Name</th>
+                      <th className="px-4 py-3">Email</th>
+                      <th className="px-4 py-3">Marked At</th>
+                      <th className="px-4 py-3 text-center">Type</th>
+                      <th className="px-4 py-3 text-right">Photo</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredRows.map((row) => {
+                      const badge = getStatusBadge(row.type);
+                      const name = row.full_name || "Unknown";
+                      const initials = name
+                        .split(" ")
+                        .filter(Boolean)
+                        .map((p) => p[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase();
 
-            {/* Table Footer / Pagination */}
+                      const markedAt = row.marked_at
+                        ? new Date(row.marked_at).toLocaleString()
+                        : "-";
+
+                      return (
+                        <tr
+                          key={row.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700 mr-3">
+                                {initials || "E"}
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">
+                                {name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {row.email || "-"}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {markedAt}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span
+                              className={`px-2.5 py-1 text-xs font-medium rounded-full ${badge.classes}`}
+                            >
+                              {badge.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {row.photo_url ? (
+                              <a
+                                href={row.photo_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 text-xs underline"
+                              >
+                                View Photo
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                No photo
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Table Footer / Pagination (simple) */}
             <div className="flex items-center justify-between mt-6 border-t border-gray-100 pt-4">
               <p className="text-sm text-gray-500">
-                Showing 5 of 142 employees
+                Showing latest {filteredRows.length} records
               </p>
               <div className="flex space-x-2">
                 <button
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   disabled
                 >
                   Previous
                 </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <button
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  disabled
+                >
                   Next
                 </button>
               </div>

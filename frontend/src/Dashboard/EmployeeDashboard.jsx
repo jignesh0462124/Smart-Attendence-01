@@ -15,31 +15,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthGuard } from "../Authentication/useAuthGuard.jsx";
 import { supabase } from "../../supabase/supabase.js";
 
-// 🛰️ Geolocation + Webcam
 import { useGeolocated } from "react-geolocated";
 import Webcam from "react-webcam";
 
-// 🔧 Change this if your bucket name is different in Supabase Storage
 const ATTENDANCE_BUCKET = "attendance";
 
 const EmployeeDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [darkMode, setDarkMode] = useState(false);
 
-  // Attendance UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const [attendanceError, setAttendanceError] = useState("");
 
-  // 🔐 If not logged in, go to /signup (Signup.jsx)
   const { user, loading } = useAuthGuard({ redirectTo: "/signup" });
-
   const navigate = useNavigate();
 
-  // Webcam ref
   const webcamRef = useRef(null);
 
-  // Geolocation hook
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
     useGeolocated({
       positionOptions: {
@@ -67,7 +60,6 @@ const EmployeeDashboard = () => {
       day: "numeric",
     });
 
-  // Display name & initials from Supabase user
   const displayName =
     user?.user_metadata?.full_name || user?.email || "Employee";
 
@@ -84,19 +76,27 @@ const EmployeeDashboard = () => {
     navigate("/signup", { replace: true });
   };
 
-  // 🔁 Helper: convert dataURL to Blob
   const dataUrlToBlob = async (dataUrl) => {
     const res = await fetch(dataUrl);
     return await res.blob();
   };
 
-  // ⭐ Core function: mark attendance (clock_in / clock_out)
+  // ⭐ Mark attendance (clock_in / clock_out)
   const markAttendance = async (type = "clock_in") => {
     setAttendanceError("");
     setAttendanceMessage("");
 
     if (!user) {
       setAttendanceError("User not found. Please log in again.");
+      return;
+    }
+
+    // ✅ NEW: each employee must be linked to an Admin ID
+    const adminUid = user?.user_metadata?.admin_uid;
+    if (!adminUid) {
+      setAttendanceError(
+        "No Admin ID linked to your account. Please contact your Admin/HR."
+      );
       return;
     }
 
@@ -128,7 +128,7 @@ const EmployeeDashboard = () => {
 
       // 2️⃣ Upload to Supabase Storage
       const fileName = `${user.id}-${Date.now()}.jpg`;
-      const filePath = `attendance-photos/${fileName}`; // path inside bucket
+      const filePath = `attendance-photos/${fileName}`;
 
       const { data: uploadData, error: storageError } = await supabase.storage
         .from(ATTENDANCE_BUCKET)
@@ -139,7 +139,6 @@ const EmployeeDashboard = () => {
 
       if (storageError) {
         console.error("Storage upload error:", storageError);
-        // show Supabase's real message to help debugging
         setAttendanceError(
           `Storage error: ${storageError.message || "Upload failed"}`
         );
@@ -147,14 +146,14 @@ const EmployeeDashboard = () => {
         return;
       }
 
-      // 3️⃣ Get public URL of the uploaded photo
+      // 3️⃣ Get public URL
       const { data: publicUrlData } = supabase.storage
         .from(ATTENDANCE_BUCKET)
         .getPublicUrl(filePath);
 
       const photoUrl = publicUrlData?.publicUrl || null;
 
-      // 4️⃣ Insert row into attendance table
+      // 4️⃣ Insert into attendance table (with admin_uid)
       const { error: insertError } = await supabase.from("attendance").insert({
         user_id: user.id,
         full_name: user.user_metadata?.full_name || null,
@@ -163,7 +162,8 @@ const EmployeeDashboard = () => {
         longitude: coords.longitude,
         type,
         photo_url: photoUrl,
-        photo_path: filePath, // optional column if you added it
+        photo_path: filePath,
+        admin_uid: adminUid, // ✅ link row to admin
       });
 
       if (insertError) {
@@ -250,7 +250,6 @@ const EmployeeDashboard = () => {
     },
   ];
 
-  // 🔄 Fast loader while checking auth
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -262,14 +261,12 @@ const EmployeeDashboard = () => {
     );
   }
 
-  // If not logged in, useAuthGuard already redirected to /signup
   if (!user) return null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Fixed width */}
+      {/* Sidebar */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col">
-        {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -282,7 +279,6 @@ const EmployeeDashboard = () => {
           </div>
         </div>
 
-        {/* Main Menu */}
         <nav className="flex-1 p-4 overflow-y-auto">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
             Main Menu
@@ -330,7 +326,6 @@ const EmployeeDashboard = () => {
           </Link>
         </nav>
 
-        {/* User Profile */}
         <div className="p-4 border-t border-gray-200">
           <Link to="/profile" className="flex items-center space-x-3 mb-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -418,7 +413,7 @@ const EmployeeDashboard = () => {
             {/* Mark Attendance Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-8 mb-6 sm:mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                {/* Left: title + status */}
+                {/* Left */}
                 <div className="flex-1">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Mark Attendance
@@ -428,7 +423,6 @@ const EmployeeDashboard = () => {
                     marking.
                   </p>
 
-                  {/* Location status */}
                   <div className="mt-3 text-xs sm:text-sm text-gray-500 space-y-1">
                     {!isGeolocationAvailable && (
                       <p>Geolocation is not available in this browser.</p>
@@ -447,7 +441,6 @@ const EmployeeDashboard = () => {
                     )}
                   </div>
 
-                  {/* Success / error messages */}
                   {attendanceError && (
                     <p className="mt-3 text-xs sm:text-sm text-red-600">
                       {attendanceError}
@@ -460,7 +453,7 @@ const EmployeeDashboard = () => {
                   )}
                 </div>
 
-                {/* Center: Time + Date */}
+                {/* Center: Time */}
                 <div className="text-center lg:mx-8">
                   <div className="text-2xl sm:text-4xl font-bold text-gray-900">
                     {formatTime(currentTime)}
@@ -472,7 +465,6 @@ const EmployeeDashboard = () => {
 
                 {/* Right: Webcam + Buttons */}
                 <div className="flex flex-col items-center gap-3">
-                  {/* Webcam preview */}
                   <div className="w-40 h-40 bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
                     <Webcam
                       ref={webcamRef}
@@ -482,7 +474,6 @@ const EmployeeDashboard = () => {
                       videoConstraints={{ facingMode: "user" }}
                     />
                   </div>
-                  {/* Buttons */}
                   <div className="flex gap-3 sm:gap-4 w-full">
                     <button
                       onClick={() => markAttendance("clock_in")}
@@ -511,7 +502,7 @@ const EmployeeDashboard = () => {
               </div>
             </div>
 
-            {/* Recent Attendance (static demo) */}
+            {/* Recent Attendance (demo static) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                 <Link
