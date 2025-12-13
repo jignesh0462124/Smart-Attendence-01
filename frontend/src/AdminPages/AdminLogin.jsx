@@ -8,10 +8,9 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [adminUid, setAdminUid] = useState(""); // Admin ID
+  const [adminUid, setAdminUid] = useState("");
   const [password, setPassword] = useState("");
 
-  // UI State
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -25,21 +24,20 @@ export default function AdminLogin() {
         throw new Error("Please enter email, password and Admin ID.");
       }
 
-      // Debug log (remove in production)
       console.log("Admin login attempt:", {
         email,
         adminUid,
         passwordLength: password.length,
       });
 
-      // 1. Admin authentication + role verification
+      // Authentication + Admin table verification
       const { user, admin } = await signInAdmin(email, password, adminUid);
 
-      // Persist minimal admin info locally (you may use context/store instead)
+      // Save admin info
       localStorage.setItem(
         "adminInfo",
         JSON.stringify({
-          auth_uid: user.id,
+          auth_uid: user?.id || null, // <-- now supports NULL auth_uid
           id: admin.id,
           admin_uid: admin.admin_uid,
           email: admin.email,
@@ -48,7 +46,6 @@ export default function AdminLogin() {
         })
       );
 
-      // 2. Navigate to Admin Dashboard
       navigate("/admin-dashboard");
     } catch (error) {
       console.error("Admin Login Error:", error);
@@ -61,7 +58,8 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        {/* Left Panel - Visuals */}
+
+        {/* Left Panel */}
         <div className="bg-slate-900 text-white p-10 flex flex-col justify-between relative overflow-hidden">
           <div className="z-10 relative">
             <h1 className="text-3xl font-bold mb-2">Admin Portal</h1>
@@ -83,7 +81,7 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        {/* Right Panel - Form */}
+        {/* Right Panel */}
         <div className="p-10 flex flex-col justify-center">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-800">Login</h2>
@@ -99,6 +97,7 @@ export default function AdminLogin() {
           )}
 
           <form onSubmit={handleAdminLogin} className="space-y-5">
+
             {/* Admin Email */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -108,7 +107,7 @@ export default function AdminLogin() {
                 type="email"
                 required
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                placeholder="admin@smartattend.com"
+                placeholder="admin@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -128,7 +127,7 @@ export default function AdminLogin() {
                 onChange={(e) => setAdminUid(e.target.value)}
               />
               <p className="mt-1 text-xs text-slate-400">
-                Use the Admin ID assigned to you (e.g. ADM-284139).
+                Example: ADM-284139
               </p>
             </div>
 
@@ -147,12 +146,13 @@ export default function AdminLogin() {
               />
             </div>
 
+            {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 text-white py-3 rounded- lg font-semibold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Verifying Credentials..." : "Access Dashboard"}
+              {loading ? "Verifying..." : "Access Dashboard"}
             </button>
           </form>
 
@@ -164,6 +164,7 @@ export default function AdminLogin() {
               </a>
             </p>
           </div>
+
         </div>
       </div>
     </div>

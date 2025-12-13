@@ -1,153 +1,64 @@
 // src/SuperAdmin/super.js
-import { supabase } from "../../supabase/supabase.js";
-
-/* =========================
-   SUPERADMIN AUTH LAYER
-   ========================= */
+import { supabase } from "../../supabase/supabase";
 
 /**
- * Sign in a SuperAdmin using email + password.
- * Verifies authenticated user's id exists in public.superadmins.auth_uid.
- * Returns: { user, session, superAdmin } on success.
+ * SuperAdmin auth + admin CRUD helpers
+ *
+ * NOTE:
+ * - This file assumes you're using OPTION A (admins are real Supabase Auth users).
+ * - addAdmin() will create a Supabase Auth user with signUp() and then insert an admins row
+ *   that contains auth_uid (linking the two systems).
+ * - Updating/deleting the auth.users record requires a server-side admin key. This client
+ *   code will NOT perform destructive admin API calls (for security).
  */
+
+/* ---------------------------
+   SuperAdmin sign-in (for login page)
+   --------------------------- */
 export async function superAdminLogin(email, password) {
-  if (!email || !password) {
-    throw new Error("Email and password are required.");
+  if (!email || !password) throw new Error("Email and password required.");
+
+  // sign in using Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    // bubble up friendly message
+    throw new Error(error.message || "Login failed.");
   }
 
-  // 1) Authenticate using Supabase Auth (v2)
-  const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({ email, password });
+  const user = data.user;
 
-  if (authError) {
-    // Authentication failed
-    throw new Error(authError.message || "Invalid login credentials.");
-  }
-
-  const user = authData?.user ?? null;
-  const session = authData?.session ?? null;
-
-  if (!user?.id) {
-    // Defensive: auth succeeded but no user returned
-    if (session) await supabase.auth.signOut();
-    throw new Error("Authentication failed (no user returned).");
-  }
-
-  // 2) Ensure this auth user is registered as a superadmin
-  const { data: superAdminRow, error: saError } = await supabase
+  // verify user exists in superadmins table
+  const { data: row, error: qErr } = await supabase
     .from("superadmins")
     .select("*")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (saError) {
-    // DB read error — sign out to be safe
+  if (qErr || !row) {
+    // not a superadmin — sign out and reject
     await supabase.auth.signOut();
-    throw new Error(saError.message || "Failed to verify superadmin.");
+    throw new Error("Not authorized as SuperAdmin.");
   }
 
-  if (!superAdminRow) {
-    // Not a superadmin — remove session and deny access
-    await supabase.auth.signOut();
-    throw new Error("Access denied. This account is not a SuperAdmin.");
-  }
-
-  // 3) Update last_login (fire-and-forget; do not fail login if update errors)
-  try {
-    await supabase
-      .from("superadmins")
-      .update({ last_login: new Date().toISOString() })
-      .eq("id", superAdminRow.id);
-  } catch (e) {
-    // ignore update errors
-    console.warn("Failed to update last_login for superadmin:", e?.message || e);
-  }
-
-  return { user, session, superAdmin: superAdminRow };
+  return user;
 }
 
-/**
- * Return the current logged-in superadmin row or null.
- */
-export async function getCurrentSuperAdmin() {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) {
-    console.error("getCurrentSuperAdmin: auth.getUser error:", userError);
-    throw userError;
-  }
-
-  const authUser = userData?.user;
-  if (!authUser) return null;
-
-  const { data: superAdminRow, error: saError } = await supabase
-    .from("superadmins")
-    .select("*")
-    .eq("auth_uid", authUser.id)
-    .maybeSingle();
-
-  if (saError) {
-    console.error("getCurrentSuperAdmin: DB read error:", saError);
-    return null;
-  }
-
-  return superAdminRow || null;
-}
-
-/**
- * Return the currently authenticated user object (or null).
- */
+/* ---------------------------
+   Current user helper
+   --------------------------- */
 export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error("getCurrentUser error:", error);
-    throw error;
-  }
+  if (error) throw error;
   return data?.user ?? null;
 }
 
-/**
- * Sign out current session
- */
-export async function superAdminLogout() {
-  await supabase.auth.signOut();
-}
-
-/* =========================
-   ADMIN MANAGEMENT HELPERS
-   ========================= */
-
-/**
- * Generate a collision-free admin uid (ADM-xxxxxx).
- */
-async function generateUniqueAdminUid(attempts = 6) {
-  for (let i = 0; i < attempts; i++) {
-    const random = Math.floor(100000 + Math.random() * 900000); // 6 digits
-    const candidate = `ADM-${random}`;
-
-    const { data: exists, error } = await supabase
-      .from("admins")
-      .select("id")
-      .eq("admin_uid", candidate)
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      // If DB read fails, bail early
-      throw new Error("Failed to generate admin UID: " + (error.message || ""));
-    }
-
-    // maybeSingle returns the row or null
-    if (!exists) {
-      return candidate;
-    }
-    // else loop and try another candidate
-  }
-  throw new Error("Failed to generate a unique admin UID after several attempts.");
-}
-
-/**
- * Get list of admins (most recent first)
- */
+/* ---------------------------
+   Admin list
+   --------------------------- */
 export async function getAdmins() {
   const { data, error } = await supabase
     .from("admins")
@@ -156,89 +67,92 @@ export async function getAdmins() {
 
   if (error) {
     console.error("getAdmins error:", error);
-    throw error;
+    throw new Error(error.message || "Failed to fetch admins.");
   }
+
   return data ?? [];
 }
 
-/**
- * Add new admin:
- * Steps:
- *  1) Save current superadmin session
- *  2) Create Auth user for new admin (signUp)
- *  3) Restore original SuperAdmin session
- *  4) Insert row into admins table with unique admin_uid
- */
+/* ---------------------------
+   Create Admin (Auth + DB)
+   - Creates Supabase Auth user via signUp()
+   - Inserts a row in admins table with auth_uid
+   --------------------------- */
 export async function addAdmin({ email, name, phone = null, password }) {
   if (!email || !name || !password) {
-    throw new Error("email, name and password are required to create an admin.");
+    throw new Error("Email, name and password are required to create an admin.");
   }
 
-  // 0) Preserve current session (so superadmin remains logged in)
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) {
-    console.warn("addAdmin: failed to read current session:", sessionError);
-  }
-  const originalSession = sessionData?.session ?? null;
+  // Normalize
+  const normEmail = email.trim().toLowerCase();
 
-  // 1) Create auth user for new admin
+  // 1) Create the Auth user (client-side signUp)
+  //    Note: this creates a normal user. If you require immediate confirmed status
+  //    and the project requires it, consider server-side creation with service role key.
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email,
+    email: normEmail,
     password,
+    options: {
+      // Do not send a confirmation redirect; adjust if you want email verification flow.
+      emailRedirectTo: null,
+    },
   });
 
   if (signUpError) {
-    console.error("addAdmin: signUp error:", signUpError);
-    throw new Error(signUpError.message || "Failed to create admin auth account.");
+    console.error("addAdmin - signUpError:", signUpError);
+    throw new Error(signUpError.message || "Failed to create auth user for admin.");
   }
 
-  const newAdminAuthUser = signUpData?.user ?? null;
-
-  // 2) Restore original session so superadmin stays logged in
-  if (originalSession) {
-    const { error: restoreError } = await supabase.auth.setSession({
-      access_token: originalSession.access_token,
-      refresh_token: originalSession.refresh_token,
-    });
-    if (restoreError) {
-      console.warn("addAdmin: failed to restore SuperAdmin session:", restoreError);
-    }
+  const auth_uid = signUpData?.user?.id;
+  if (!auth_uid) {
+    // Very defensive — if signUp didn't return an id, abort
+    throw new Error("Failed to retrieve auth user id after signup.");
   }
 
-  // 3) Insert admin row in admins table (with unique admin_uid)
-  const admin_uid = await generateUniqueAdminUid();
-
-  const insertPayload = {
-    admin_uid,
-    email,
+  // 2) Insert admins table row, linking auth_uid
+  const payload = {
+    auth_uid,
+    admin_uid: undefined, // Let DB default/generator set this (if configured)
+    email: normEmail,
     name,
+    phone,
+    password, // storing plaintext per your previous request — consider hashing in future
   };
-  if (phone) insertPayload.phone = phone;
 
-  const { data: adminRow, error: adminError } = await supabase
+  const { data, error } = await supabase
     .from("admins")
-    .insert([insertPayload])
+    .insert([payload])
     .select()
     .maybeSingle();
 
-  if (adminError) {
-    console.error("addAdmin: insert admin row error:", adminError);
-    throw new Error(adminError.message || "Failed to create admin record.");
+  if (error) {
+    console.error("addAdmin - insert admin error:", error);
+
+    // NOTE: if DB insert fails, the Auth user is already created and may be orphaned.
+    // You should either:
+    //  - delete the created auth user using an admin API (server-side), or
+    //  - leave it and clean up manually from Supabase Dashboard.
+    //
+    // We will surface the DB error to the caller.
+    throw new Error(error.message || "Failed to create admin record.");
   }
 
-  return { admin: adminRow, authUser: newAdminAuthUser };
+  return data;
 }
 
-/**
- * Update an existing admin row (by id)
- */
-export async function updateAdmin(id, { email, name, phone }) {
+/* ---------------------------
+   Update Admin (DB only)
+   - Does NOT update the linked auth.users record (requires server-side admin key)
+   --------------------------- */
+export async function updateAdmin(id, { email, name, phone, password }) {
   if (!id) throw new Error("updateAdmin requires admin id.");
 
+  // build payload for allowed fields
   const payload = {};
-  if (email !== undefined) payload.email = email;
+  if (email !== undefined) payload.email = String(email).trim().toLowerCase();
   if (name !== undefined) payload.name = name;
   if (phone !== undefined) payload.phone = phone;
+  if (password !== undefined) payload.password = password; // again: plaintext per request
 
   const { data, error } = await supabase
     .from("admins")
@@ -251,6 +165,40 @@ export async function updateAdmin(id, { email, name, phone }) {
     console.error("updateAdmin error:", error);
     throw new Error(error.message || "Failed to update admin.");
   }
+
+  return data;
+}
+
+/* ---------------------------
+   Delete Admin (DB only)
+   - Deletes admin row from admins table.
+   - Does NOT delete the auth.user. Deleting auth.user requires a server-side call.
+   --------------------------- */
+export async function deleteAdmin(id) {
+  if (!id) throw new Error("deleteAdmin requires admin id.");
+
+  // Fetch the admin row first (returns auth_uid so you can use it if you have a server cleanup)
+  const { data: rows, error: fetchErr } = await supabase
+    .from("admins")
+    .select("auth_uid")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) {
+    console.error("deleteAdmin - fetch error:", fetchErr);
+    throw new Error(fetchErr.message || "Failed to fetch admin before delete.");
+  }
+
+  const { data, error } = await supabase.from("admins").delete().eq("id", id);
+
+  if (error) {
+    console.error("deleteAdmin error:", error);
+    throw new Error(error.message || "Failed to delete admin.");
+  }
+
+  // NOTE: if you want to also delete the auth user:
+  // - call a server-side endpoint (Edge Function) to remove auth user by auth_uid using service_role key.
+  // - do NOT embed service_role key in client code.
 
   return data;
 }
