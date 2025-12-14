@@ -20,6 +20,15 @@ import Webcam from "react-webcam";
 
 const ATTENDANCE_BUCKET = "attendance";
 
+import { markAttendanceLogic } from "../utils/attendanceLogic";
+import { hasAttendanceToday } from "../services/attendanceService";
+import {
+  calculateAttendancePercentage,
+} from "../utils/attendancePercentage";
+
+import { getMonthlyAttendance } from "../services/attendanceService";
+
+
 const EmployeeDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [darkMode, setDarkMode] = useState(false);
@@ -27,6 +36,10 @@ const EmployeeDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const [attendanceError, setAttendanceError] = useState("");
+
+  const [todayStatus, setTodayStatus] = useState(null);
+  const [attendancePercentage, setAttendancePercentage] = useState("0");
+
 
   const { user, loading } = useAuthGuard({ redirectTo: "/signup" });
   const navigate = useNavigate();
@@ -41,10 +54,42 @@ const EmployeeDashboard = () => {
       userDecisionTimeout: 10000,
     });
 
+
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (!user) return;
+
+    const fetchAttendancePercentage = async () => {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth(); // 0-based
+
+        const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+        const endDate = new Date(year, month + 1, 0)
+          .toISOString()
+          .split("T")[0];
+
+        const records = await getMonthlyAttendance(
+          user.id,
+          startDate,
+          endDate
+        );
+
+        const percentage = calculateAttendancePercentage(
+          records,
+          year,
+          month
+        );
+
+        setAttendancePercentage(percentage);
+      } catch (err) {
+        console.error("Attendance % error:", err);
+      }
+    };
+
+    fetchAttendancePercentage();
+  }, [user]);
+
 
   const formatTime = (date) =>
     date.toLocaleTimeString("en-US", {
@@ -91,7 +136,8 @@ const EmployeeDashboard = () => {
       return;
     }
 
-    // ✅ NEW: each employee must be linked to an Admin ID
+    // REMOVED: Check for and use of admin_uid
+    /*
     const adminUid = user?.user_metadata?.admin_uid;
     if (!adminUid) {
       setAttendanceError(
@@ -99,6 +145,7 @@ const EmployeeDashboard = () => {
       );
       return;
     }
+    */
 
     if (!isGeolocationAvailable) {
       setAttendanceError("Geolocation is not available in this browser.");
@@ -118,73 +165,60 @@ const EmployeeDashboard = () => {
     try {
       setIsSubmitting(true);
 
-      // 1️⃣ Capture webcam photo
+      const today = new Date().toISOString().split("T")[0];
+
+      // ✅ Check if already marked
+      const alreadyMarked = await hasAttendanceToday(user.id, today);
+
+      // ✅ Weekday + late logic
+      const attendance = markAttendanceLogic(user.id, alreadyMarked);
+
+      // ⬇️ KEEP ALL YOUR EXISTING CODE BELOW ⬇️
+      // webcam capture
       const screenshot = webcamRef.current.getScreenshot();
-      if (!screenshot) {
-        throw new Error("Could not capture photo from webcam.");
-      }
+      if (!screenshot) throw new Error("Could not capture photo.");
 
       const blob = await dataUrlToBlob(screenshot);
 
-      // 2️⃣ Upload to Supabase Storage
+      // upload image
       const fileName = `${user.id}-${Date.now()}.jpg`;
       const filePath = `attendance-photos/${fileName}`;
 
-      const { data: uploadData, error: storageError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(ATTENDANCE_BUCKET)
-        .upload(filePath, blob, {
-          contentType: "image/jpeg",
-          upsert: false,
-        });
+        .upload(filePath, blob);
 
-      if (storageError) {
-        console.error("Storage upload error:", storageError);
-        setAttendanceError(
-          `Storage error: ${storageError.message || "Upload failed"}`
-        );
-        setIsSubmitting(false);
-        return;
-      }
+      if (uploadError) throw uploadError;
 
-      // 3️⃣ Get public URL
       const { data: publicUrlData } = supabase.storage
         .from(ATTENDANCE_BUCKET)
         .getPublicUrl(filePath);
 
-      const photoUrl = publicUrlData?.publicUrl || null;
-
-      // 4️⃣ Insert into attendance table (with admin_uid)
+      // save attendance
       const { error: insertError } = await supabase.from("attendance").insert({
         user_id: user.id,
-        full_name: user.user_metadata?.full_name || null,
+        full_name: user.user_metadata?.full_name,
         email: user.email,
+        date: attendance.date,
+        check_in_time: attendance.checkInTime,
+        status: attendance.status,
         latitude: coords.latitude,
         longitude: coords.longitude,
-        type,
-        photo_url: photoUrl,
-        photo_path: filePath,
-        admin_uid: adminUid, // ✅ link row to admin
+        photo_url: publicUrlData.publicUrl,
+        // REMOVED: admin_uid field
+        // admin_uid: user.user_metadata?.admin_uid,
       });
 
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        setAttendanceError(
-          insertError.message || "Failed to save attendance in database."
-        );
-        setIsSubmitting(false);
-        return;
-      }
+      if (insertError) throw insertError;
 
+      setTodayStatus(attendance.status);
       setAttendanceMessage(
-        type === "clock_in"
-          ? "Clock-in recorded successfully ✅"
-          : "Clock-out recorded successfully ✅"
+        attendance.status === "Late"
+          ? "Attendance marked (Late ⏰)"
+          : "Attendance marked successfully ✅"
       );
     } catch (err) {
-      console.error("Attendance error:", err);
-      setAttendanceError(
-        err?.message || "Something went wrong while marking attendance."
-      );
+      setAttendanceError(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -199,8 +233,8 @@ const EmployeeDashboard = () => {
     },
     {
       title: "Attendance",
-      value: "95%",
-      subtitle: "95% over 10 days",
+      value: `${attendancePercentage}%`,
+      subtitle: "This month",
       icon: "✓",
     },
     {
@@ -505,6 +539,9 @@ const EmployeeDashboard = () => {
             {/* Recent Attendance (demo static) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Recent Attendance
+                </h3>
                 <Link
                   to="/attendance-history"
                   className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-700 font-medium"
