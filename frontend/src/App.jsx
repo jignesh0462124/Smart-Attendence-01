@@ -9,8 +9,6 @@ import EmployeeLeave from "./EmployeePages/EmployeeLeave";
 import ProfilePage from "./EmployeePages/ProfilePage";
 import Notification from "./Notification/Notification";
 import CompanyCalendar from "./Calender/CompanyCalendar";
-import SuperLogin from "./SuperAdmin/SuperLogin.jsx";
-import SuperDashboard from "./SuperAdmin/SuperDashboard.jsx";
 
 // 🔒 import your auth guard hook (change path if needed)
 import { useAuthGuard } from "./Authentication/useAuthGuard.jsx";
@@ -35,8 +33,7 @@ const App = () => {
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="signup" element={<Signup />} />
-        <Route path="super-login" element={<SuperLogin />} />
-
+      
         {/* Protected: Employee */}
         <Route
           path="employee-dashboard"
@@ -85,17 +82,6 @@ const App = () => {
           element={
             <ProtectedRoute>
               <CompanyCalendar />
-            </ProtectedRoute>
-          }
-        />
-
-       
-        {/* Protected: Super Admin */}
-        <Route
-          path="super-dashboard"
-          element={
-            <ProtectedRoute redirectTo="/super-login">
-              <SuperDashboard />
             </ProtectedRoute>
           }
         />
