@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   TrendingUp,
@@ -12,361 +12,299 @@ import {
   Moon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-// Assuming UseAuthGuard is a custom hook and available in JS environment
-// import { UseAuthGuard } from "../AuthGuard/UseAuthGuard";
+import { supabase } from "../../supabase/supabase";
 
-// Removed TypeScript interface
-// interface AttendanceRecord {
-//   date: string;
-//   status: string;
-//   checkIn: string;
-//   checkOut: string;
-//   hours: string;
-//   location: string;
-//   verification: string;
-//   type: string;
-// }
+/* ===============================
+   ATTENDANCE CONSTANTS & HELPERS
+================================ */
 
-// Removed : React.FC
-const AttendanceHistory = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [view, setView] = useState("list");
-  // Removed type annotation for records state
+export const CHECK_IN_TIME = "09:30";
+export const LATE_LIMIT_MINUTES = 10;
+
+function isWeekday(date) {
+  const day = date.getDay();
+  return day !== 0 && day !== 6;
+}
+
+function timeToMinutes(time) {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function getWorkingDaysInMonth(year, month) {
+  let count = 0;
+  const days = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(year, month, d);
+    if (isWeekday(date)) count++;
+  }
+  return count;
+}
+
+function calculateAttendancePercentage(records, year, month) {
+  const workingDays = getWorkingDaysInMonth(year, month);
+
+  const attended = records.filter((r) => {
+    const d = new Date(r.date);
+    return (
+      d.getFullYear() === year &&
+      d.getMonth() === month &&
+      (r.status === "Present" || r.status === "Late")
+    );
+  }).length;
+
+  if (workingDays === 0) return "0";
+  return ((attended / workingDays) * 100).toFixed(1);
+}
+
+/* ===============================
+   MAIN COMPONENT
+================================ */
+
+export default function AttendanceHistory() {
   const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
-  // Removed type annotation for error state
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
-  // 🔐 Mock Auth guard check (replace with actual hook if needed)
-  // const { isLoading: authLoading } = UseAuthGuard("/");
-  const authLoading = false;
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
 
-  // Mock records (Removed type annotation)
-  const initialRecords = [
-    {
-      date: "2023-10-26",
-      status: "Present",
-      checkIn: "09:02 AM",
-      checkOut: "06:00 PM",
-      hours: "8h 58m",
-      location: "Office HQ",
-      verification: "Face Scan",
-      type: "present",
-    },
-    {
-      date: "2023-10-25",
-      status: "Late",
-      checkIn: "09:15 AM",
-      checkOut: "06:30 PM",
-      hours: "9h 15m",
-      location: "Office HQ",
-      verification: "Face Scan",
-      type: "late",
-    },
-    {
-      date: "2023-10-24",
-      status: "Present",
-      checkIn: "08:55 AM",
-      checkOut: "05:55 PM",
-      hours: "9h 00m",
-      location: "Remote",
-      verification: "Geofence",
-      type: "present",
-    },
-    {
-      date: "2023-10-23",
-      status: "Present",
-      checkIn: "09:00 AM",
-      checkOut: "06:00 PM",
-      hours: "9h 00m",
-      location: "Office HQ",
-      verification: "Face Scan",
-      type: "present",
-    },
-    {
-      date: "2023-10-20",
-      status: "Leave",
-      checkIn: "-",
-      checkOut: "-",
-      hours: "-",
-      location: "-",
-      verification: "-",
-      type: "leave",
-    },
-  ];
+  const isMonthCompleted =
+    today.getDate() === new Date(year, month + 1, 0).getDate();
+
+  /* ===============================
+     FETCH ATTENDANCE FROM SUPABASE
+  ================================ */
 
   useEffect(() => {
-    setRecords(initialRecords);
+    fetchAttendance();
   }, []);
 
-  // Removed type annotation for parameter 'type'
+  async function fetchAttendance() {
+    try {
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("User not logged in");
+
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const grouped = groupAttendanceByDay(data);
+      setRecords(grouped);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ===============================
+     GROUP CLOCK_IN / CLOCK_OUT
+  ================================ */
+
+  function groupAttendanceByDay(rows) {
+    const map = {};
+
+    rows.forEach((r) => {
+      const date = r.created_at.split("T")[0];
+      if (!map[date]) {
+        map[date] = {
+          date,
+          checkIn: "-",
+          checkOut: "-",
+          hours: "-",
+          location: r.latitude ? "Office" : "Remote",
+          verification: r.photo_url ? "Face Scan" : "Geofence",
+          status: "Absent",
+          type: "absent",
+        };
+      }
+
+      if (r.type === "clock_in") {
+        map[date].checkIn = new Date(r.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const checkInMinutes = timeToMinutes(map[date].checkIn);
+        const fixed = timeToMinutes(CHECK_IN_TIME);
+
+        if (checkInMinutes <= fixed) {
+          map[date].status = "Present";
+          map[date].type = "present";
+        } else if (checkInMinutes <= fixed + LATE_LIMIT_MINUTES) {
+          map[date].status = "Late";
+          map[date].type = "late";
+        }
+      }
+
+      if (r.type === "clock_out") {
+        map[date].checkOut = new Date(r.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+    });
+
+    return Object.values(map).reverse();
+  }
+
+  /* ===============================
+     SUMMARY CALCULATIONS
+  ================================ */
+
+  const summary = useMemo(() => {
+    const present = records.filter((r) => r.status === "Present").length;
+    const late = records.filter((r) => r.status === "Late").length;
+    const absent = getWorkingDaysInMonth(year, month) - (present + late);
+    const percentage = calculateAttendancePercentage(records, year, month);
+
+    return { present, late, absent, percentage };
+  }, [records]);
+
+  /* ===============================
+     STATUS COLOR
+  ================================ */
+
   const getStatusColor = (type) => {
     if (type === "present") return "bg-green-100 text-green-700";
     if (type === "late") return "bg-yellow-100 text-yellow-700";
     return "bg-red-100 text-red-700";
   };
 
-  // ⏳ Show loader while auth is being checked
-  if (authLoading) {
+  /* ===============================
+     RENDER
+  ================================ */
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-600">Checking authentication...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading attendance...
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">HRMS Portal</h1>
-              <p className="text-xs text-gray-500">EMPLOYEE</p>
-            </div>
-          </div>
+      {/* =================== SIDEBAR =================== */}
+      <aside className="w-64 bg-white border-r">
+        <div className="p-6 border-b">
+          <h1 className="text-lg font-bold">HRMS Portal</h1>
+          <p className="text-xs text-gray-500">EMPLOYEE</p>
         </div>
 
-        {/* Main Menu */}
-        <nav className="flex-1 p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Main Menu
-          </p>
-          <div className="space-y-1">
-            <Link
-              to="/employee-dashboard"
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium text-left">
-              <FolderOpen className="w-5 h-5" />
-              <span>Attendance History</span>
-            </button>
-            <Link
-              to="/leave"
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
-            >
-              <FileText className="w-5 h-5" />
-              <span>Leaves</span>
-            </Link>
-            <Link
-              to="/calendar"
-              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Calendar</span>
-            </Link>
-          </div>
-
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-3">
-            Support
-          </p>
-          <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left">
-            <HelpCircle className="w-5 h-5" />
-            <span>Helpdesk</span>
-          </button>
-        </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <Link to="/profile" className="flex items-center space-x-3 mb-3 ">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-              SJ
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
-                Sarah Johnson
-              </p>
-              <p className="text-xs text-gray-500">Senior Engineer</p>
-            </div>
+        <nav className="p-4 space-y-2">
+          <Link to="/employee-dashboard" className="flex gap-2">
+            <TrendingUp /> Dashboard
           </Link>
-          {loading && (
-            <div className="text-xs text-gray-500 mb-2">Loading...</div>
-          )}
-          {error && (
-            <div className="text-xs text-red-600 mb-2">Error: {error}</div>
-          )}
-          <div className="flex items-center justify-between">
-            <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
+          <div className="font-semibold text-indigo-600">
+            <FolderOpen /> Attendance History
           </div>
-        </div>
+        </nav>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Attendance History
-              </h2>
-              <p className="text-gray-600 mt-1">
-                Manage your attendance history and records.
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                {/* Note: In EmployeeDashboard.jsx they used a ternary for Moon/Sun based on darkMode, here it was hardcoded to Moon. I'll stick to Moon/Sun for consistency */}
-                {darkMode ? (
-                  <Moon className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Moon className="w-5 h-5 text-gray-600" />
-                )}
-              </button>
-              <Link to="/notification">
-                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-              </Link>
-
-            </div>
-          </div>
+      {/* =================== MAIN =================== */}
+      <main className="flex-1 p-8">
+        <header className="mb-8 flex justify-between">
+          <h2 className="text-2xl font-bold">Attendance History</h2>
+          <button onClick={() => setDarkMode(!darkMode)}>
+            <Moon />
+          </button>
         </header>
 
-        {/* Content */}
-        <div className="p-8">
-          {/* Summary Cards */}
-          <div className="flex gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-green-500 flex-1">
-              <p className="text-sm text-gray-600 font-medium mb-2">Present</p>
-              <h3 className="text-3xl font-bold text-green-600">4</h3>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-red-500 flex-1">
-              <p className="text-sm text-gray-600 font-medium mb-2">Absent</p>
-              <h3 className="text-3xl font-bold text-red-600">1</h3>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-yellow-500 flex-1">
-              <p className="text-sm text-gray-600 font-medium mb-2">Late</p>
-              <h3 className="text-3xl font-bold text-yellow-600">1</h3>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-blue-500 flex-1">
-              <p className="text-sm text-gray-600 font-medium mb-2">
-                Avg Hours
-              </p>
-              <h3 className="text-3xl font-bold text-blue-600">8.5</h3>
-            </div>
+        {/* =================== SUMMARY =================== */}
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <SummaryCard title="Present" value={summary.present} color="green" />
+          <SummaryCard title="Absent" value={summary.absent} color="red" />
+          <SummaryCard title="Late" value={summary.late} color="yellow" />
+          <SummaryCard
+            title="Attendance %"
+            value={`${summary.percentage}%`}
+            color="blue"
+          />
+        </div>
+
+        {/* =================== MONTH COMPLETED VIEW =================== */}
+        {isMonthCompleted && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg text-blue-700 font-medium">
+            Monthly attendance finalized. Summary locked.
           </div>
+        )}
 
-          {/* Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900">
-                Attendance Records
-              </h3>
-
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setView("list")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "list"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  List
-                </button>
-                <button
-                  onClick={() => setView("calendar")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "calendar"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  Calendar
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Date
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Check In / Out
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Work Hours
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Location
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                      Verification
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((record, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-gray-100 hover:bg-gray-50"
+        {/* =================== TABLE =================== */}
+        <div className="bg-white rounded-xl shadow border">
+          <table className="w-full">
+            <thead className="border-b">
+              <tr>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Check In / Out</th>
+                <th className="p-3">Location</th>
+                <th className="p-3">Verification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r, i) => (
+                <tr key={i} className="border-b hover:bg-gray-50">
+                  <td className="p-3">{r.date}</td>
+                  <td className="p-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                        r.type
+                      )}`}
                     >
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {record.date}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                            record.type
-                          )}`}
-                        >
-                          {record.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        <div>{record.checkIn}</div>
-                        <div className="text-gray-500">{record.checkOut}</div>
-                      </td>
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900">
-                        {record.hours}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span>{record.location}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          {record.verification === "Face Scan" ||
-                            record.verification === "Geofence" ? (
-                            <ShieldCheck className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <span className="w-4 h-4"></span>
-                          )}
-                          <span>{record.verification}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {r.checkIn} / {r.checkOut}
+                  </td>
+                  <td className="p-3 flex gap-1 items-center">
+                    <MapPin className="w-4 h-4" /> {r.location}
+                  </td>
+                  <td className="p-3 flex gap-1 items-center">
+                    <ShieldCheck className="w-4 h-4 text-green-600" />
+                    {r.verification}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>
   );
-};
+}
 
-export default AttendanceHistory;
+/* ===============================
+   SUMMARY CARD COMPONENT
+================================ */
+
+function SummaryCard({ title, value, color }) {
+  const colors = {
+    green: "text-green-600 border-l-green-500",
+    red: "text-red-600 border-l-red-500",
+    yellow: "text-yellow-600 border-l-yellow-500",
+    blue: "text-blue-600 border-l-blue-500",
+  };
+
+  return (
+    <div
+      className={`bg-white p-6 rounded-xl shadow border-l-4 ${colors[color]}`}
+    >
+      <p className="text-sm text-gray-500">{title}</p>
+      <h3 className="text-3xl font-bold">{value}</h3>
+    </div>
+  );
+}
