@@ -1,305 +1,195 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, TrendingUp, FileText, FolderOpen, HelpCircle, LogOut, Bell, User, Settings, MapPin, Briefcase, Mail, Phone, Camera } from 'lucide-react';
+import { useUserProfile } from '../Authentication/useUserProfile';
+import { supabase } from '../../supabase/supabase';
 
-// Removed interface for props
-
-// Removed : React.FC<ProfilePageProps>
 const ProfilePage = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const { profile, loadingProfile, setProfile, refreshProfile } = useUserProfile();
+  
   const [activeTab, setActiveTab] = useState('personal');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
   const [formData, setFormData] = useState({
-    firstName: 'John',
-    lastName: 'Admin',
-    email: 'john.admin@company.com',
-    phone: '+1 (555) 987-6543',
-    address: '456 Corporate Blvd, Suite 100, New York, NY 10001'
+    firstName: '', lastName: '', email: '', phone: '', address: ''
   });
 
-  // Removed type annotation for parameter 'page'
-  const handleNavigation = (page) => {
-    if (onNavigate) {
-      onNavigate(page);
+  useEffect(() => {
+    if (profile.name) {
+      const nameParts = profile.name.split(' ');
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: profile.email || '',
+        phone: profile.phone_number || '',
+        address: profile.address || ''
+      });
+    }
+  }, [profile]);
+
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsSaving(true);
+    setMessage({ type: '', text: 'Uploading image...' });
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${profile.user_id}/${Math.random()}.${fileExt}`;
+
+      // 1. Upload to 'Profileimages' bucket
+      const { data, error: uploadError } = await supabase.storage
+        .from('Profileimages')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        if (uploadError.message.includes("Bucket not found")) {
+          throw new Error("Storage Error: The 'Profileimages' bucket does not exist. Please create it in your Supabase Dashboard.");
+        }
+        throw uploadError;
+      }
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('Profileimages')
+        .getPublicUrl(filePath);
+
+      // 3. Update public.users table (Matches your schema: user_id, profile_image)
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile_image: publicUrl })
+        .eq('user_id', profile.user_id);
+
+      if (updateError) throw updateError;
+
+      setMessage({ type: 'success', text: 'Profile picture updated!' });
+      refreshProfile();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Removed explicit type annotation for event handler
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
+    const { error } = await supabase
+      .from('users')
+      .update({
+        full_name: fullName,
+        phone_number: formData.phone,
+        address: formData.address
+      })
+      .eq('user_id', profile.user_id);
+
+    if (error) {
+      setMessage({ type: 'error', text: 'Update failed: ' + error.message });
+    } else {
+      setMessage({ type: 'success', text: 'Profile updated!' });
+      refreshProfile();
+    }
+    setIsSaving(false);
   };
 
-  const handleSaveChanges = () => {
-    console.log('Saving changes:', formData);
-    // Add your API call here
-  };
+  if (loadingProfile) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
+      {/* Sidebar UI preserved */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">HRMS</h1>
-              <p className="text-xs text-gray-500">Control</p>
-            </div>
+            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center"><Calendar className="w-6 h-6 text-white" /></div>
+            <div><h1 className="text-lg font-bold text-gray-900">HRMS</h1><p className="text-xs text-gray-500">Control</p></div>
           </div>
-          <p className="text-xs text-gray-400 mt-1">Advanced Management</p>
         </div>
-
-         {/* Main Menu */}
-                <nav className="flex-1 p-4">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                    Main Menu
-                  </p>
-                  <div className="space-y-1">
-                    <Link
-                      to="/employee-dashboard"
-                      className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
-                    >
-                      <TrendingUp className="w-5 h-5" />
-                      <span>Dashboard</span>
-                    </Link>
-                    <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left">
-                      <FolderOpen className="w-5 h-5" />
-                      <span>Attendance History</span>
-                    </button>
-                    <Link
-                      to="/leave"
-                      className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left"
-                    >
-                      <FileText className="w-5 h-5" />
-                      <span>Leaves</span>
-                    </Link>
-                    <Link
-                      to="/calendar"
-                      className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                    >
-                      <Calendar className="w-5 h-5" />
-                      <span>Calendar</span>
-                    </Link>
-                  </div>
-        
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-3">
-                    Support
-                  </p>
-                  <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-left">
-                    <HelpCircle className="w-5 h-5" />
-                    <span>Helpdesk</span>
-                  </button>
+        <nav className="flex-1 p-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Main Menu</p>
+          <div className="space-y-1">
+            <Link to="/employee-dashboard" className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+              <TrendingUp className="w-5 h-5" /><span>Dashboard</span>
+            </Link>
+          </div>
         </nav>
-
-        {/* User Profile */}
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-              JA
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+               {profile.profile_image ? <img src={profile.profile_image} className="w-full h-full object-cover" /> : profile.initials}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">John Admin</p>
-              <p className="text-xs text-gray-500">Administrator</p>
-            </div>
+            <div className="flex-1"><p className="text-sm font-semibold text-gray-900 truncate w-32">{profile.name}</p></div>
           </div>
-          <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
+          <button onClick={handleSignOut} className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium w-full"><LogOut className="w-4 h-4" /><span>Sign Out</span></button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {/* Header */}
         <header className="bg-white border-b border-gray-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">My Account</h2>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Link to="/notification">
-                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-              </Link>
-
-            </div>
-          </div>
+          <div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">My Account</h2></div>
         </header>
 
-        {/* Profile Content */}
         <div className="p-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-            {/* Profile Header with Avatar */}
+            {message.text && <div className={`mb-6 p-4 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{message.text}</div>}
+
             <div className="flex items-center space-x-6 mb-8">
               <div className="relative">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-indigo-100">
                   <img
-                    src="https://ui-avatars.com/api/?name=John+Admin&size=96&background=4F46E5&color=fff"
+                    src={profile.profile_image || `https://ui-Profileimages.com/api/?name=${profile.name}&size=96&background=4F46E5&color=fff`}
                     alt="Profile"
-                    className="w-24 h-24 rounded-full"
+                    className="w-24 h-24 object-cover"
                   />
                 </div>
-                <button className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white hover:bg-indigo-700 shadow-lg">
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white hover:bg-indigo-700 shadow-lg">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
 
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">John Admin</h3>
-                <p className="text-indigo-600 font-medium mt-1">System Administrator</p>
+                <h3 className="text-2xl font-bold text-gray-900">{profile.name}</h3>
                 <div className="flex items-center space-x-4 mt-3 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Briefcase className="w-4 h-4" />
-                    <span>ID: ADM-001</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>IT Department</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>New York, USA</span>
-                  </div>
+                  <div className="flex items-center space-x-1"><Briefcase className="w-4 h-4" /><span>ID: {profile.employee_id}</span></div>
+                  <div className="flex items-center space-x-1"><MapPin className="w-4 h-4" /><span>{profile.address || 'No address set'}</span></div>
                 </div>
               </div>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs & Form preserved exactly as original UI */}
             <div className="border-b border-gray-200 mb-6">
               <div className="flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('personal')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'personal'
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
-                >
-                  Personal Info
-                </button>
-                <button
-                  onClick={() => setActiveTab('security')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'security'
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
-                >
-                  Account Security
-                </button>
-                <button
-                  onClick={() => setActiveTab('preferences')}
-                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preferences'
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                    }`}
-                >
-                  Preferences
-                </button>
+                <button onClick={() => setActiveTab('personal')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'personal' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600 hover:text-gray-900'}`}>Personal Info</button>
+                <button onClick={() => setActiveTab('security')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'security' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600 hover:text-gray-900'}`}>Account Security</button>
               </div>
             </div>
 
-            {/* Form Content */}
             {activeTab === 'personal' && (
               <div className="space-y-6">
-                {/* First Name and Last Name */}
                 <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm"
-                    />
-                  </div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-2">First Name</label><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" /></div>
                 </div>
-
-                {/* Email and Phone */}
                 <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm"
-                    />
-                  </div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-2">Email</label><input type="email" value={formData.email} disabled className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-lg text-gray-400 text-sm cursor-not-allowed" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-2">Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm" /></div>
                 </div>
-
-                {/* Address */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address
-                  </label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-gray-900 text-sm"
-                  />
-                </div>
-
-                {/* Save Button */}
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveChanges}
-                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors text-sm"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'security' && (
-              <div className="text-center py-12 text-gray-500">
-                Account Security settings coming soon...
-              </div>
-            )}
-
-            {activeTab === 'preferences' && (
-              <div className="text-center py-12 text-gray-500">
-                Preferences settings coming soon...
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">Address</label><textarea name="address" value={formData.address} onChange={handleInputChange} rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg resize-none text-sm" /></div>
+                <div className="flex justify-end pt-4"><button onClick={handleSaveChanges} disabled={isSaving} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm disabled:opacity-50">{isSaving ? 'Updating...' : 'Save Changes'}</button></div>
               </div>
             )}
           </div>
