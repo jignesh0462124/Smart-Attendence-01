@@ -1,10 +1,8 @@
 // src/hooks/useAuthGuard.jsx
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase/supabase.js";
 
-export function useAuthGuard({ redirectTo = "/auth", redirectIfFound } = {}) {
-  const navigate = useNavigate();
+export function useAuthGuard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,13 +18,8 @@ export function useAuthGuard({ redirectTo = "/auth", redirectIfFound } = {}) {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
-        if (!currentUser && redirectTo) {
-          navigate(redirectTo, { replace: true });
-        } else if (currentUser && redirectIfFound) {
-          navigate(redirectIfFound, { replace: true });
-        }
       } catch (err) {
-        if (isMounted && redirectTo) navigate(redirectTo, { replace: true });
+        // Swallow redirect intent; caller decides how to handle auth failures.
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -38,9 +31,6 @@ export function useAuthGuard({ redirectTo = "/auth", redirectIfFound } = {}) {
       setUser(currentUser);
       setLoading(false);
 
-      if (!currentUser && redirectTo) {
-        navigate(redirectTo, { replace: true });
-      }
     });
 
     checkActiveSession();
@@ -48,7 +38,7 @@ export function useAuthGuard({ redirectTo = "/auth", redirectIfFound } = {}) {
       isMounted = false;
       subscription?.unsubscribe?.();
     };
-  }, [navigate, redirectTo, redirectIfFound]);
+  }, []);
 
   return { user, loading };
 }

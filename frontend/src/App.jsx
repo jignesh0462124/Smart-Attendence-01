@@ -1,92 +1,64 @@
 // src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./Landing/Landing";
 import Signup from "./Authentication/Signup";
 import EmployeeDashboard from "./Dashboard/EmployeeDashboard";
 import AttendanceHistory from "./EmployeePages/AttendanceHistory";
 import EmployeeLeave from "./EmployeePages/EmployeeLeave";
 import ProfilePage from "./EmployeePages/ProfilePage";
+import Helpdesk from "./EmployeePages/Helpdesk";
 import Notification from "./Notification/Notification";
 import CompanyCalendar from "./Calender/CompanyCalendar";
+import Layout from "./components/Layout";
+import { UserProfileProvider, useUserProfile } from "./context/UserProfileContext";
 
-// 🔒 import your auth guard hook (change path if needed)
-import { useAuthGuard } from "./Authentication/useAuthGuard.jsx";
-// 🔒 simple wrapper component to protect routes
-const ProtectedRoute = ({ children, redirectTo = "/Signup" }) => {
-  const { user, loading } = useAuthGuard({ redirectTo });
+// 🔒 Protected Route Wrapper
+const ProtectedRoute = ({ children }) => {
+  const { userProfile, loading } = useUserProfile();
 
   if (loading) {
-    return <div>Checking session...</div>; // you can replace with a loader UI
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  // If not logged in, useAuthGuard already redirected, just render nothing
-  if (!user) return null;
+  if (!userProfile) {
+    return <Navigate to="/signup" replace />;
+  }
 
   return children;
 };
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="signup" element={<Signup />} />
-      
-        {/* Protected: Employee */}
-        <Route
-          path="employee-dashboard"
-          element={
-            <ProtectedRoute>
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="attendance-history"
-          element={
-            <ProtectedRoute>
-              <AttendanceHistory />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="leave"
-          element={
-            <ProtectedRoute>
-              <EmployeeLeave />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+    <UserProfileProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="signup" element={<Signup />} />
 
-        
-        <Route
-          path="notification"
-          element={
-            <ProtectedRoute>
-              <Notification />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="calendar"
-          element={
-            <ProtectedRoute>
-              <CompanyCalendar />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+          {/* Employee Routes - Wrapped in Layout */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="employee-dashboard" element={<EmployeeDashboard />} />
+            <Route path="attendance-history" element={<AttendanceHistory />} />
+            <Route path="leave" element={<EmployeeLeave />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="helpdesk" element={<Helpdesk />} />
+            <Route path="notification" element={<Notification />} />
+            <Route path="calendar" element={<CompanyCalendar />} />
+          </Route>
+
+          {/* Admin Routes Removed - Admin is in a separate project */}
+
+        </Routes>
+      </Router>
+    </UserProfileProvider>
   );
 };
 

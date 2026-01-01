@@ -125,12 +125,15 @@ export default function Landing() {
               className="md:hidden border-t border-slate-100 bg-white"
             >
               <div className="space-y-1 px-4 py-4">
-                {['Features', 'How it Works', 'Pricing', 'Login'].map((item) => (
-                  <a key={item} href="#" className="block rounded-lg px-3 py-2 text-base font-semibold text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                {['Features', 'How it Works', 'Pricing'].map((item) => (
+                  <a key={item} href={`#${item.toLowerCase().replace(/\s/g, '-')}`} className="block rounded-lg px-3 py-2 text-base font-semibold text-slate-600 hover:bg-slate-50 hover:text-blue-600">
                     {item}
                   </a>
                 ))}
-                <button className="mt-4 w-full rounded-lg bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white">
+                <button 
+                  onClick={() => window.location.href = "/signup"}
+                  className="mt-4 w-full rounded-lg bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white hover:bg-blue-700"
+                >
                   Get Started
                 </button>
               </div>

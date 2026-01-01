@@ -1,414 +1,402 @@
-import React, { useState } from "react";
+// src/EmployeePages/EmployeeLeave.jsx
+import React, { useEffect, useState, useMemo } from "react";
 import {
-  Calendar,
-  TrendingUp,
   FileText,
-  FolderOpen,
-  HelpCircle,
-  LogOut,
-  Bell,
-  Moon,
   Send,
+  AlertCircle
 } from "lucide-react";
-import { Link } from "react-router-dom";
-// Assuming UseAuthGuard is a custom hook and available in JS environment
-// import { UseAuthGuard } from "../AuthGuard/UseAuthGuard";
+import { useOutletContext } from "react-router-dom";
+import { useUserProfile } from "../context/UserProfileContext";
+import { applyLeave, getMyLeaves } from "../services/leavesService";
 
-// Removed TypeScript interface for LeaveRequest
-
-// Removed : React.FC
-const LeaveManagement = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [leaveType, setLeaveType] = useState("Annual Leave");
-  const [durationType, setDurationType] = useState("Full Day");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [reason, setReason] = useState("");
-
-  // 🔐 Mock Auth guard check
-  // const { isLoading: authLoading } = UseAuthGuard("/");
-  const authLoading = false;
-
-  // Leave balance data
-  const leaveBalance = [
-    {
-      type: "Annual Leave",
-      used: 12,
-      total: 15,
-      bgColor: "bg-blue-500",
-      textColor: "text-white",
-    },
-    {
-      type: "Sick Leave",
-      used: 5,
-      total: 10,
-      bgColor: "bg-white",
-      textColor: "text-gray-900",
-    },
-    {
-      type: "Casual Leave",
-      used: 3,
-      total: 5,
-      bgColor: "bg-white",
-      textColor: "text-gray-900",
-    },
-  ];
-
-  // Recent leave requests
-  const recentRequests = [
-    {
-      id: 1,
-      type: "Sick Leave",
-      dateRange: "Oct 12 - Oct 15 (2 Days)",
-      status: "PENDING",
-      statusColor: "bg-yellow-100 text-yellow-700",
-      dotColor: "bg-yellow-400",
-    },
-    {
-      id: 2,
-      type: "Casual Leave",
-      dateRange: "Sep 05 (1 Day)",
-      status: "APPROVED",
-      statusColor: "bg-green-100 text-green-700",
-      dotColor: "bg-green-400",
-    },
-    {
-      id: 3,
-      type: "Unpaid Leave",
-      dateRange: "Aug 12 (1 Day)",
-      status: "REJECTED",
-      statusColor: "bg-red-100 text-red-700",
-      dotColor: "bg-red-400",
-    },
-  ];
-
-  const handleSubmit = () => {
-    console.log({ leaveType, durationType, startDate, endDate, reason });
-    // Add your API call here
-  };
-
-  const handleCancel = () => {
-    setLeaveType("Annual Leave");
-    setDurationType("Full Day");
-    setStartDate("");
-    setEndDate("");
-    setReason("");
-  };
-
-  // ⏳ Show loader while auth is being checked
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-600">Checking authentication...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">HRMS Portal</h1>
-              <p className="text-xs text-gray-500">EMPLOYEE</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Menu */}
-        <nav className="flex-1 p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Main Menu
-          </p>
-          <div className="space-y-1">
-            <Link
-              to="/employee-dashboard"
-              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              to="/attendance-history"
-              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              <FolderOpen className="w-5 h-5" />
-              <span>Attendance History</span>
-            </Link>
-            <Link
-              to="/leave"
-              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium"
-            >
-              <FileText className="w-5 h-5" />
-              <span>Leaves</span>
-            </Link>
-            <Link
-              to="/calendar"
-              className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Calendar</span>
-            </Link>
-          </div>
-
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-3">
-            Support
-          </p>
-          <a
-            href="#"
-            className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-          >
-            <HelpCircle className="w-5 h-5" />
-            <span>Helpdesk</span>
-          </a>
-        </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <Link to="/profile" className="flex items-center space-x-3 mb-3 ">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-              SJ
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
-                Sarah Johnson
-              </p>
-              <p className="text-xs text-gray-500">Senior Engineer</p>
-            </div>
-          </Link>
-          <div className="flex items-center justify-between">
-            <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Leave Management
-              </h2>
-              <p className="text-gray-600 mt-1">
-                Manage your leaves and records.
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <Moon className="w-5 h-5 text-gray-600" />
-              </button>
-              <Link to="/notification">
-                <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        {/* Leave Management Content */}
-        <div className="p-8">
-          {/* Leave Balance Cards */}
-          <div className="flex gap-4 mb-6">
-            {leaveBalance.map((leave, index) => (
-              <div
-                key={index}
-                className={`${leave.bgColor} rounded-xl p-6 shadow-sm ${index > 0 ? "border border-gray-200" : ""
-                  } flex-1`}
-              >
-                <p
-                  className={`text-sm font-medium mb-3 ${leave.textColor} opacity-90`}
-                >
-                  {leave.type}
-                </p>
-                <div className="flex items-baseline space-x-1">
-                  <h3 className={`text-4xl font-bold ${leave.textColor}`}>
-                    {leave.used}
-                  </h3>
-                  <span
-                    className={`text-xl ${leave.textColor} opacity-60`}
-                  >{`/ ${leave.total}`}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Apply for Leave Form */}
-            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center mr-3">
-                  <FileText className="w-5 h-5 text-indigo-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  Apply for Leave
-                </h3>
-              </div>
-
-              <div className="space-y-5">
-                {/* Leave Type and Duration */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Leave Type
-                    </label>
-                    <select
-                      value={leaveType}
-                      onChange={(e) => setLeaveType(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900 text-sm"
-                    >
-                      <option>Annual Leave</option>
-                      <option>Sick Leave</option>
-                      <option>Casual Leave</option>
-                      <option>Unpaid Leave</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Duration
-                    </label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setDurationType("Full Day")}
-                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${durationType === "Full Day"
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
-                          }`}
-                      >
-                        Full Day
-                      </button>
-                      <button
-                        onClick={() => setDurationType("Half Day")}
-                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${durationType === "Half Day"
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
-                          }`}
-                      >
-                        Half Day
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Start Date and End Date */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date
-                    </label>
-                    <input
-                      type="text"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      placeholder="mm/dd/yyyy"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm placeholder-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Date
-                    </label>
-                    <input
-                      type="text"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      placeholder="mm/dd/yyyy"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 text-sm placeholder-gray-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Reason */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason
-                  </label>
-                  <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Describe the reason..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-gray-900 text-sm placeholder-gray-400"
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    onClick={handleCancel}
-                    className="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2 text-sm"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>Submit Application</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Requests */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Recent Requests
-                </h3>
-                <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                  View All
-                </button>
-              </div>
-
-              <div className="space-y-5">
-                {recentRequests.map((request) => (
-                  <div key={request.id} className="flex items-start space-x-3">
-                    <div
-                      className={`w-2.5 h-2.5 ${request.dotColor} rounded-full mt-1.5 flex-shrink-0`}
-                    ></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900 text-sm">
-                          {request.type}
-                        </h4>
-                        <span
-                          className={`px-2.5 py-1 text-xs font-bold rounded whitespace-nowrap ${request.statusColor}`}
-                        >
-                          {request.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {request.dateRange}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+const LEAVE_QUOTAS = {
+  "Annual Leave": 15,
+  "Sick Leave": 10,
+  "Casual Leave": 5,
+  "Unpaid Leave": 0
 };
 
-export default LeaveManagement;
+export default function EmployeeLeave() {
+  const { userProfile } = useUserProfile();
+  const { darkMode } = useOutletContext();
+  const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const [formData, setFormData] = useState({
+    leave_type: "Annual Leave",
+    duration: "Full Day",
+    start_date: "",
+    end_date: "",
+    reason: ""
+  });
+
+  useEffect(() => {
+    if (userProfile) {
+      loadLeaves();
+    }
+  }, [userProfile]);
+
+  async function loadLeaves() {
+    try {
+      setLoading(true);
+      const data = await getMyLeaves(userProfile.id);
+      setLeaves(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load leave history.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const balances = useMemo(() => {
+    const used = {
+      "Annual Leave": 0,
+      "Sick Leave": 0,
+      "Casual Leave": 0,
+      "Unpaid Leave": 0
+    };
+
+    leaves.forEach(l => {
+      if (l.status === 'Approved') {
+        const start = new Date(l.start_date);
+        const end = new Date(l.end_date);
+        let days = (end - start) / (1000 * 60 * 60 * 24) + 1;
+
+        if (l.duration === 'Half Day') {
+          days = 0.5;
+        }
+
+        if (used[l.leave_type] !== undefined) {
+          used[l.leave_type] += days;
+        }
+      }
+    });
+
+    return [
+      {
+        type: "Annual Leave",
+        used: used["Annual Leave"],
+        total: LEAVE_QUOTAS["Annual Leave"],
+        bgColor: "bg-blue-500",
+        textColor: "text-white",
+      },
+      {
+        type: "Sick Leave",
+        used: used["Sick Leave"],
+        total: LEAVE_QUOTAS["Sick Leave"],
+        bgColor: darkMode ? "bg-gray-700" : "bg-white",
+        textColor: darkMode ? "text-white" : "text-gray-900",
+      },
+      {
+        type: "Casual Leave",
+        used: used["Casual Leave"],
+        total: LEAVE_QUOTAS["Casual Leave"],
+        bgColor: darkMode ? "bg-gray-700" : "bg-white",
+        textColor: darkMode ? "text-white" : "text-gray-900",
+      },
+    ];
+  }, [leaves, darkMode]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleDurationChange = (type) => {
+    setFormData(prev => ({
+      ...prev,
+      duration: type,
+      end_date: type === 'Half Day' ? prev.start_date : prev.end_date
+    }));
+  };
+
+  const handleSubmit = async () => {
+    setError("");
+    setSuccessMsg("");
+
+    if (!formData.start_date || !formData.end_date || !formData.reason) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (formData.duration === 'Half Day' && formData.start_date !== formData.end_date) {
+      setError("For Half Day leave, Start Date and End Date must be the same.");
+      return;
+    }
+
+    if (new Date(formData.end_date) < new Date(formData.start_date)) {
+      setError("End Date cannot be before Start Date.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await applyLeave({
+        user_id: userProfile.id,
+        ...formData
+      });
+      setSuccessMsg("Leave application submitted successfully!");
+      setFormData({
+        leave_type: "Annual Leave",
+        duration: "Full Day",
+        start_date: "",
+        end_date: "",
+        reason: ""
+      });
+      loadLeaves();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'Rejected': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+    }
+  };
+
+  const getDotStyle = (status) => {
+    switch (status) {
+      case 'Approved': return 'bg-green-400';
+      case 'Rejected': return 'bg-red-400';
+      default: return 'bg-yellow-400';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+            Leave Management
+          </h2>
+          <p className={`mt-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            Manage your leaves and view history.
+          </p>
+        </div>
+      </div>
+
+      {/* Leave Balance Cards */}
+      <div className="flex flex-col md:flex-row gap-4">
+        {balances.map((leave, index) => (
+          <div
+            key={index}
+            className={`${leave.bgColor} rounded-xl p-6 shadow-sm ${index > 0 && !darkMode ? "border border-gray-200" : darkMode && index > 0 ? "border border-gray-700" : ""
+              } flex-1`}
+          >
+            <p
+              className={`text-sm font-medium mb-3 ${leave.textColor} opacity-90`}
+            >
+              {leave.type}
+            </p>
+            <div className="flex items-baseline space-x-1">
+              <h3 className={`text-4xl font-bold ${leave.textColor}`}>
+                {leave.used}
+              </h3>
+              <span
+                className={`text-xl ${leave.textColor} opacity-60`}
+              >{`/ ${leave.total}`}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Apply for Leave Form */}
+        <div className={`lg:col-span-2 rounded-xl shadow-sm border p-6 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+          <div className="flex items-center mb-6">
+            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center mr-3">
+              <FileText className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+              Apply for Leave
+            </h3>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {successMsg}
+            </div>
+          )}
+
+          <div className="space-y-5">
+            {/* Leave Type and Duration */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Leave Type
+                </label>
+                <select
+                  name="leave_type"
+                  value={formData.leave_type}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+                >
+                  <option>Annual Leave</option>
+                  <option>Sick Leave</option>
+                  <option>Casual Leave</option>
+                  <option>Unpaid Leave</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Duration
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleDurationChange("Full Day")}
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${formData.duration === "Full Day"
+                      ? "bg-indigo-600 text-white"
+                      : darkMode ? "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600" : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
+                      }`}
+                  >
+                    Full Day
+                  </button>
+                  <button
+                    onClick={() => handleDurationChange("Half Day")}
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${formData.duration === "Half Day"
+                      ? "bg-indigo-600 text-white"
+                      : darkMode ? "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600" : "bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100"
+                      }`}
+                  >
+                    Half Day
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Start Date and End Date */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Start Date
+                </label>
+                <input
+                  name="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "border-gray-300 text-gray-900"}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  End Date
+                </label>
+                <input
+                  name="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  readOnly={formData.duration === 'Half Day'}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "border-gray-300 text-gray-900"} ${formData.duration === 'Half Day' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                />
+              </div>
+            </div>
+
+            {/* Reason */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                Reason
+              </label>
+              <textarea
+                name="reason"
+                value={formData.reason}
+                onChange={handleInputChange}
+                placeholder="Describe the reason..."
+                rows={3}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "border-gray-300 text-gray-900 placeholder-gray-400"}`}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                onClick={() => setFormData({ ...formData, reason: "", start_date: "", end_date: "" })}
+                className={`px-5 py-2.5 font-medium rounded-lg transition-colors text-sm ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                Reset
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className={`px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2 text-sm ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {submitting ? (
+                  <span>Submitting...</span>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Submit Application</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Requests */}
+        <div className={`rounded-xl shadow-sm border p-6 flex flex-col h-full ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+              Leave History
+            </h3>
+          </div>
+
+          <div className="space-y-5 overflow-y-auto max-h-[500px] pr-2">
+            {leaves.length === 0 ? (
+              <p className={`text-sm italic ${darkMode ? "text-gray-500" : "text-gray-500"}`}>No leave history found.</p>
+            ) : (
+              leaves.map((request) => (
+                <div key={request.id} className={`flex items-start space-x-3 pb-3 border-b last:border-0 last:pb-0 ${darkMode ? "border-gray-700" : "border-gray-50"}`}>
+                  <div
+                    className={`w-2.5 h-2.5 ${getDotStyle(request.status)} rounded-full mt-1.5 flex-shrink-0`}
+                  ></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className={`font-semibold text-sm ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                        {request.leave_type}
+                      </h4>
+                      <span
+                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded uppercase tracking-wide whitespace-nowrap ${getStatusStyle(request.status)}`}
+                      >
+                        {request.status}
+                      </span>
+                    </div>
+                    <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                      {new Date(request.start_date).toLocaleDateString()}
+                      {request.start_date !== request.end_date && ` - ${new Date(request.end_date).toLocaleDateString()}`}
+                      {' '}
+                      <span className="text-indigo-600 font-medium">({request.duration === 'Half Day' ? '0.5' : (
+                        (new Date(request.end_date) - new Date(request.start_date)) / (1000 * 60 * 60 * 24) + 1
+                      )} Day)</span>
+                    </p>
+                    {request.rejection_reason && (
+                      <p className="text-xs text-red-500 mt-1">Reason: {request.rejection_reason}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

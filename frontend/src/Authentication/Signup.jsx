@@ -1,13 +1,11 @@
 // src/Authentication/Signup.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabase/supabase.js";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import img1 from "./img1/img1.png";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const location = useLocation();
-
   // Views: login, signup, reset
   const [view, setView] = useState("login");
 
@@ -29,6 +27,14 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  const formatSupabaseError = (err) => {
+    if (!err) return "Unexpected error";
+    const code = err.code || "";
+    if (code === "invalid_grant" || code === "invalid_credentials") return "Invalid email or password.";
+    if (code === "email_not_confirmed") return "Please confirm your email before logging in.";
+    return err.message || "Something went wrong.";
+  };
 
   const resetMessages = () => {
     setErrorMsg("");
@@ -52,10 +58,9 @@ export default function Signup() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       // If the user clicks the email link, event is 'SIGNED_IN'
       if (event === "SIGNED_IN" && session) {
-        setSuccessMsg("Email confirmed! Redirecting to dashboard...");
-        setTimeout(() => {
-          navigate("/employee-dashboard", { replace: true });
-        }, 2000);
+        setSuccessMsg("Logged in. Redirecting to dashboard...");
+        setLoading(false);
+        setTimeout(() => navigate("/employee-dashboard", { replace: true }), 500);
       }
 
       // Check for errors in the URL hash (e.g., link expired)
@@ -79,9 +84,11 @@ export default function Signup() {
         password: loginPassword,
       });
       if (error) throw error;
-      // Success is handled by onAuthStateChange
+      setSuccessMsg("Logged in. Redirecting to dashboard...");
+      // onAuthStateChange will redirect; also navigate immediately for snappier UX
+      navigate("/employee-dashboard", { replace: true });
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(formatSupabaseError(err));
     } finally {
       setLoading(false);
     }
@@ -116,7 +123,7 @@ export default function Signup() {
       setSuccessMsg("Signup successful! Please check your email to confirm your account.");
       setView("login");
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(formatSupabaseError(err));
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Some browser extensions expect the Firefox-style `browser` global.
+      // Providing a shim avoids ReferenceError crashes that can break the app.
+      window.browser = window.browser || window.chrome;
+    </script>
     <title>frontend</title>
   </head>
   <body>

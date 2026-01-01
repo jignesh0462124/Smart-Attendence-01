@@ -1,310 +1,181 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/EmployeePages/AttendanceHistory.jsx
+import React, { useEffect, useState, useMemo } from "react";
 import {
-  Calendar,
-  TrendingUp,
-  FileText,
-  FolderOpen,
-  HelpCircle,
-  LogOut,
-  MapPin,
-  ShieldCheck,
-  Bell,
-  Moon,
+  Filter,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { supabase } from "../../supabase/supabase";
-
-/* ===============================
-   ATTENDANCE CONSTANTS & HELPERS
-================================ */
-
-export const CHECK_IN_TIME = "09:30";
-export const LATE_LIMIT_MINUTES = 10;
-
-function isWeekday(date) {
-  const day = date.getDay();
-  return day !== 0 && day !== 6;
-}
-
-function timeToMinutes(time) {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function getWorkingDaysInMonth(year, month) {
-  let count = 0;
-  const days = new Date(year, month + 1, 0).getDate();
-  for (let d = 1; d <= days; d++) {
-    const date = new Date(year, month, d);
-    if (isWeekday(date)) count++;
-  }
-  return count;
-}
-
-function calculateAttendancePercentage(records, year, month) {
-  const workingDays = getWorkingDaysInMonth(year, month);
-
-  const attended = records.filter((r) => {
-    const d = new Date(r.date);
-    return (
-      d.getFullYear() === year &&
-      d.getMonth() === month &&
-      (r.status === "Present" || r.status === "Late")
-    );
-  }).length;
-
-  if (workingDays === 0) return "0";
-  return ((attended / workingDays) * 100).toFixed(1);
-}
-
-/* ===============================
-   MAIN COMPONENT
-================================ */
+import { useOutletContext } from "react-router-dom";
+import { useUserProfile } from "../context/UserProfileContext";
+import { getAttendanceHistory } from "../services/attendanceService";
 
 export default function AttendanceHistory() {
+  const { userProfile } = useUserProfile();
+  const { darkMode } = useOutletContext();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-
-  const isMonthCompleted =
-    today.getDate() === new Date(year, month + 1, 0).getDate();
-
-  /* ===============================
-     FETCH ATTENDANCE FROM SUPABASE
-  ================================ */
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    fetchAttendance();
-  }, []);
+    if (userProfile) {
+      fetchHistory();
+    }
+  }, [userProfile, selectedMonth, selectedYear]);
 
-  async function fetchAttendance() {
+  async function fetchHistory() {
     try {
       setLoading(true);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) throw new Error("User not logged in");
-
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      const grouped = groupAttendanceByDay(data);
-      setRecords(grouped);
+      setError("");
+      const data = await getAttendanceHistory(userProfile.id, selectedMonth, selectedYear);
+      setRecords(data);
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError("Failed to load attendance history.");
     } finally {
       setLoading(false);
     }
   }
 
-  /* ===============================
-     GROUP CLOCK_IN / CLOCK_OUT
-  ================================ */
+  const stats = useMemo(() => {
+    const total = records.length;
+    const present = records.filter(r => r.status === 'Present').length;
+    const late = records.filter(r => r.status === 'Late').length;
+    const leaves = records.filter(r => r.status === 'Leave').length;
 
-  function groupAttendanceByDay(rows) {
-    const map = {};
-
-    rows.forEach((r) => {
-      const date = r.created_at.split("T")[0];
-      if (!map[date]) {
-        map[date] = {
-          date,
-          checkIn: "-",
-          checkOut: "-",
-          hours: "-",
-          location: r.latitude ? "Office" : "Remote",
-          verification: r.photo_url ? "Face Scan" : "Geofence",
-          status: "Absent",
-          type: "absent",
-        };
-      }
-
-      if (r.type === "clock_in") {
-        map[date].checkIn = new Date(r.created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        const checkInMinutes = timeToMinutes(map[date].checkIn);
-        const fixed = timeToMinutes(CHECK_IN_TIME);
-
-        if (checkInMinutes <= fixed) {
-          map[date].status = "Present";
-          map[date].type = "present";
-        } else if (checkInMinutes <= fixed + LATE_LIMIT_MINUTES) {
-          map[date].status = "Late";
-          map[date].type = "late";
-        }
-      }
-
-      if (r.type === "clock_out") {
-        map[date].checkOut = new Date(r.created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      }
-    });
-
-    return Object.values(map).reverse();
-  }
-
-  /* ===============================
-     SUMMARY CALCULATIONS
-  ================================ */
-
-  const summary = useMemo(() => {
-    const present = records.filter((r) => r.status === "Present").length;
-    const late = records.filter((r) => r.status === "Late").length;
-    const absent = getWorkingDaysInMonth(year, month) - (present + late);
-    const percentage = calculateAttendancePercentage(records, year, month);
-
-    return { present, late, absent, percentage };
+    return { present, late, leaves, total };
   }, [records]);
 
-  /* ===============================
-     STATUS COLOR
-  ================================ */
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
-  const getStatusColor = (type) => {
-    if (type === "present") return "bg-green-100 text-green-700";
-    if (type === "late") return "bg-yellow-100 text-yellow-700";
-    return "bg-red-100 text-red-700";
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Present': return 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'Late': return 'bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+      case 'Leave': return 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+      case 'Absent': return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+      default: return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600';
+    }
   };
 
-  /* ===============================
-     RENDER
-  ================================ */
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading attendance...
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* =================== SIDEBAR =================== */}
-      <aside className="w-64 bg-white border-r">
-        <div className="p-6 border-b">
-          <h1 className="text-lg font-bold">HRMS Portal</h1>
-          <p className="text-xs text-gray-500">EMPLOYEE</p>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Attendance History</h1>
+          <p className={darkMode ? "text-gray-400" : "text-gray-500"}>View and track your monthly attendance.</p>
         </div>
 
-        <nav className="p-4 space-y-2">
-          <Link to="/employee-dashboard" className="flex gap-2">
-            <TrendingUp /> Dashboard
-          </Link>
-          <div className="font-semibold text-indigo-600">
-            <FolderOpen /> Attendance History
-          </div>
-        </nav>
-      </aside>
-
-      {/* =================== MAIN =================== */}
-      <main className="flex-1 p-8">
-        <header className="mb-8 flex justify-between">
-          <h2 className="text-2xl font-bold">Attendance History</h2>
-          <button onClick={() => setDarkMode(!darkMode)}>
-            <Moon />
-          </button>
-        </header>
-
-        {/* =================== SUMMARY =================== */}
-        <div className="grid grid-cols-4 gap-6 mb-8">
-          <SummaryCard title="Present" value={summary.present} color="green" />
-          <SummaryCard title="Absent" value={summary.absent} color="red" />
-          <SummaryCard title="Late" value={summary.late} color="yellow" />
-          <SummaryCard
-            title="Attendance %"
-            value={`${summary.percentage}%`}
-            color="blue"
-          />
+        <div className={`flex items-center gap-3 p-2 rounded-lg border shadow-sm ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+          <Filter className={`w-5 h-5 ml-2 ${darkMode ? "text-gray-400" : "text-gray-400"}`} />
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className={`bg-transparent border-none focus:ring-0 text-sm font-medium cursor-pointer ${darkMode ? "text-gray-200" : "text-gray-700"}`}
+          >
+            {months.map((m, i) => (
+              <option key={i} value={i + 1} className={darkMode ? "bg-gray-800" : ""}>{m}</option>
+            ))}
+          </select>
+          <div className={`h-4 w-px ${darkMode ? "bg-gray-600" : "bg-gray-300"}`}></div>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className={`bg-transparent border-none focus:ring-0 text-sm font-medium cursor-pointer ${darkMode ? "text-gray-200" : "text-gray-700"}`}
+          >
+            {[2023, 2024, 2025, 2026].map(y => (
+              <option key={y} value={y} className={darkMode ? "bg-gray-800" : ""}>{y}</option>
+            ))}
+          </select>
         </div>
+      </div>
 
-        {/* =================== MONTH COMPLETED VIEW =================== */}
-        {isMonthCompleted && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg text-blue-700 font-medium">
-            Monthly attendance finalized. Summary locked.
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: "Present Days", value: stats.present, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/20" },
+          { label: "Late Arrivals", value: stats.late, color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-900/20" },
+          { label: "Leaves Taken", value: stats.leaves, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+          { label: "Total Logs", value: stats.total, color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-800" },
+        ].map((s, i) => (
+          <div key={i} className={`p-4 rounded-xl border ${darkMode ? "border-gray-700" : "border-gray-100"} ${s.bg}`}>
+            <p className={`text-sm font-medium opacity-80 ${s.color}`}>{s.label}</p>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
-        )}
+        ))}
+      </div>
 
-        {/* =================== TABLE =================== */}
-        <div className="bg-white rounded-xl shadow border">
-          <table className="w-full">
-            <thead className="border-b">
+      {/* Table */}
+      <div className={`rounded-xl shadow-sm border overflow-hidden ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className={`text-xs uppercase font-semibold ${darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-50 text-gray-500"}`}>
               <tr>
-                <th className="p-3 text-left">Date</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Check In / Out</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Verification</th>
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Day</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Clock In</th>
+                <th className="px-6 py-4">Clock Out</th>
+                <th className="px-6 py-4">Total Hrs</th>
               </tr>
             </thead>
-            <tbody>
-              {records.map((r, i) => (
-                <tr key={i} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{r.date}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                        r.type
-                      )}`}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {r.checkIn} / {r.checkOut}
-                  </td>
-                  <td className="p-3 flex gap-1 items-center">
-                    <MapPin className="w-4 h-4" /> {r.location}
-                  </td>
-                  <td className="p-3 flex gap-1 items-center">
-                    <ShieldCheck className="w-4 h-4 text-green-600" />
-                    {r.verification}
-                  </td>
-                </tr>
-              ))}
+            <tbody className={`divide-y text-sm ${darkMode ? "divide-gray-700" : "divide-gray-100"}`}>
+              {loading ? (
+                <tr><td colSpan="6" className={`px-6 py-12 text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Loading history...</td></tr>
+              ) : records.length === 0 ? (
+                <tr><td colSpan="6" className={`px-6 py-12 text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>No records found for {months[selectedMonth - 1]} {selectedYear}.</td></tr>
+              ) : (
+                records.map((record) => {
+                  const dateObj = new Date(record.date);
+                  const checkIn = record.check_in ? new Date(record.check_in) : null;
+                  const checkOut = record.check_out ? new Date(record.check_out) : null;
+
+                  let totalHours = "-";
+                  if (checkIn && checkOut) {
+                    const diff = (checkOut - checkIn) / (1000 * 60 * 60);
+                    const h = Math.floor(diff);
+                    const m = Math.floor((diff - h) * 60);
+                    totalHours = `${h}h ${m}m`;
+                  }
+
+                  return (
+                    <tr key={record.id} className={`transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"}`}>
+                      <td className={`px-6 py-4 font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                        {dateObj.toLocaleDateString()}
+                      </td>
+                      <td className={`px-6 py-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        {dateObj.toLocaleDateString('en-US', { weekday: 'long' })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusStyle(record.status)}`}>
+                          {record.status}
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 font-mono ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                        {checkIn ? checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </td>
+                      <td className={`px-6 py-4 font-mono ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                        {checkOut ? checkOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </td>
+                      <td className={`px-6 py-4 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                        {totalHours}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
-      </main>
+        {/* Footer */}
+        <div className={`px-6 py-4 border-t text-xs flex justify-between ${darkMode ? "border-gray-700 bg-gray-800 text-gray-400" : "border-gray-100 bg-gray-50 text-gray-500"}`}>
+          <span>Showing {records.length} records</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ===============================
-   SUMMARY CARD COMPONENT
-================================ */
-
-function SummaryCard({ title, value, color }) {
-  const colors = {
-    green: "text-green-600 border-l-green-500",
-    red: "text-red-600 border-l-red-500",
-    yellow: "text-yellow-600 border-l-yellow-500",
-    blue: "text-blue-600 border-l-blue-500",
-  };
-
-  return (
-    <div
-      className={`bg-white p-6 rounded-xl shadow border-l-4 ${colors[color]}`}
-    >
-      <p className="text-sm text-gray-500">{title}</p>
-      <h3 className="text-3xl font-bold">{value}</h3>
-    </div>
-  );
-}
