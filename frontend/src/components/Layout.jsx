@@ -61,8 +61,8 @@ const Layout = () => {
             to="/employee-dashboard"
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${isActive('/employee-dashboard')
-                ? "bg-indigo-50 text-indigo-600"
-                : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
+              ? "bg-indigo-50 text-indigo-600"
+              : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
               }`}
           >
             <TrendingUp className="w-5 h-5" />
@@ -72,8 +72,8 @@ const Layout = () => {
             to="/attendance-history"
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${isActive('/attendance-history')
-                ? "bg-indigo-50 text-indigo-600"
-                : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
+              ? "bg-indigo-50 text-indigo-600"
+              : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
               }`}
           >
             <FolderOpen className="w-5 h-5" />
@@ -83,8 +83,8 @@ const Layout = () => {
             to="/leave"
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${isActive('/leave')
-                ? "bg-indigo-50 text-indigo-600"
-                : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
+              ? "bg-indigo-50 text-indigo-600"
+              : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
               }`}
           >
             <FileText className="w-5 h-5" />
@@ -94,8 +94,8 @@ const Layout = () => {
             to="/helpdesk"
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${isActive('/helpdesk')
-                ? "bg-indigo-50 text-indigo-600"
-                : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
+              ? "bg-indigo-50 text-indigo-600"
+              : darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-50"
               }`}
           >
             <HelpCircle className="w-5 h-5" />
@@ -161,10 +161,11 @@ const Layout = () => {
                 <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg transition-colors ${darkMode ? "hover:bg-gray-800 text-yellow-400" : "hover:bg-gray-100 text-gray-600"}`}>
                   {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-                <button className={`p-2 rounded-full relative ${darkMode ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-600"}`}>
+                <Link to="/notification" className={`p-2 rounded-full relative transition-colors ${darkMode ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-600"}`}>
                   <Bell className="w-6 h-6" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+                  {/* We can make this conditional later based on unread count */}
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                </Link>
               </div>
             </div>
           </div>

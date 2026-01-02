@@ -6,6 +6,9 @@ import {
   AlertCircle,
   CheckCircle,
   HelpCircle,
+  MessageSquare,
+  FileText,
+  LifeBuoy
 } from "lucide-react";
 
 const Helpdesk = () => {
@@ -19,10 +22,10 @@ const Helpdesk = () => {
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    { value: "Attendance", label: "Attendance Issue", icon: "📋" },
-    { value: "Leave", label: "Leave Request", icon: "📅" },
-    { value: "Technical", label: "Technical Issue", icon: "💻" },
-    { value: "Other", label: "Other", icon: "❓" },
+    { value: "Attendance", label: "Attendance Issue", icon: FileText, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-900/30" },
+    { value: "Leave", label: "Leave Request", icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-900/30" },
+    { value: "Technical", label: "Technical Issue", icon: LifeBuoy, color: "text-orange-500", bg: "bg-orange-100 dark:bg-orange-900/30" },
+    { value: "Other", label: "Other Inquiry", icon: HelpCircle, color: "text-gray-500", bg: "bg-gray-100 dark:bg-gray-700" },
   ];
 
   const handleChange = (e) => {
@@ -48,6 +51,7 @@ const Helpdesk = () => {
     setLoading(true);
 
     try {
+      // Simulation of API call
       console.log("🎫 Support Ticket Submitted:", {
         ...formData,
         timestamp: new Date().toISOString(),
@@ -73,188 +77,199 @@ const Helpdesk = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+          <h1 className={`text-3xl font-extrabold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>
             Support Center
-          </h2>
-          <p className={`mt-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Have an issue? We're here to help.
+          </h1>
+          <p className={`mt-2 text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            We're here to help! Search for answers or submit a ticket.
           </p>
+        </div>
+        <div className={`px-4 py-2 rounded-full text-sm font-semibold border flex items-center gap-2 ${darkMode ? "bg-gray-800 border-gray-700 text-green-400" : "bg-white border-gray-200 text-green-600"}`}>
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          Support Online
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Section */}
+        {/* Left Column: Ticket Form */}
         <div className="lg:col-span-2">
-          <div className={`rounded-xl shadow-sm border p-6 sm:p-8 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-xl font-bold mb-6 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              Raise a Support Ticket
-            </h2>
+          <div className={`rounded-2xl shadow-xl border overflow-hidden transition-all duration-300 ${darkMode ? "bg-gray-800 border-gray-700 shadow-gray-900/50" : "bg-white border-gray-100 shadow-slate-200/50"}`}>
+            <div className={`p-6 md:p-8 border-b ${darkMode ? "border-gray-700 bg-gray-800/50" : "border-gray-50 bg-gray-50/50"}`}>
+              <h2 className={`text-xl font-bold flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                <Send className={`w-5 h-5 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+                Submit a Request
+              </h2>
+            </div>
 
-            {submitted && (
-              <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${darkMode ? "bg-green-900/30 border border-green-800" : "bg-green-50 border border-green-200"}`}>
-                <CheckCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${darkMode ? "text-green-400" : "text-green-600"}`} />
-                <div>
-                  <h3 className={`font-semibold ${darkMode ? "text-green-300" : "text-green-700"}`}>
-                    Ticket Submitted Successfully!
-                  </h3>
-                  <p className={`text-sm mt-1 ${darkMode ? "text-green-400" : "text-green-600"}`}>
-                    Our support team will review your request and get back to you within 24 hours.
+            <div className="p-6 md:p-8">
+              {submitted ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 animate-scale-in">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${darkMode ? "bg-green-900/30 text-green-400" : "bg-green-100 text-green-600"}`}>
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Request Received!</h3>
+                  <p className={`max-w-md ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    Your ticket has been successfully submitted. We've sent a confirmation email to your inbox.
                   </p>
+                  <button
+                    onClick={() => setSubmitted(false)}
+                    className="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Submit Another Ticket
+                  </button>
                 </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Subject */}
-              <div>
-                <label
-                  htmlFor="subject"
-                  className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-                >
-                  Subject <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="subject"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  placeholder="e.g., Attendance Mark Issue"
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${darkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "border-gray-300 text-gray-900"}`}
-                  disabled={loading}
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label
-                  htmlFor="category"
-                  className={`block text-sm font-medium mb-3 ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-                >
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.value}
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          category: cat.value,
-                        }))
-                      }
-                      className={`p-3 rounded-lg border-2 transition-all font-medium text-sm flex items-center gap-2 ${formData.category === cat.value
-                        ? `border-indigo-500 ${darkMode ? "bg-indigo-900/30 text-indigo-300" : "bg-indigo-50 text-indigo-700"}`
-                        : `border-gray-200 ${darkMode ? "border-gray-600 bg-gray-700 text-gray-300 hover:border-indigo-500" : "bg-white text-gray-700 hover:border-indigo-300"}`
-                        }`}
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Subject */}
+                  <div className="space-y-2">
+                    <label htmlFor="subject" className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      id="subject"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      placeholder="Briefly describe the issue..."
+                      className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none ${darkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:bg-white"}`}
                       disabled={loading}
+                    />
+                  </div>
+
+                  {/* Category Selection */}
+                  <div className="space-y-2">
+                    <label className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                      Category
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {categories.map((cat) => {
+                        const Icon = cat.icon;
+                        const isSelected = formData.category === cat.value;
+                        return (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, category: cat.value }))}
+                            className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 flex items-center gap-3 group ${isSelected
+                              ? `border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.02] ${darkMode ? "bg-indigo-900/20" : "bg-indigo-50"}`
+                              : `border-transparent ${darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-50 hover:bg-gray-100"}`
+                              }`}
+                          >
+                            <div className={`p-2 rounded-lg ${cat.bg} ${cat.color}`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className={`font-semibold ${darkMode ? "text-gray-200" : "text-gray-900"}`}>{cat.label}</div>
+                              {isSelected && <div className={`text-xs mt-0.5 font-medium ${darkMode ? "text-indigo-400" : "text-indigo-600"}`}>Selected</div>}
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-3 right-3">
+                                <CheckCircle className="w-4 h-4 text-indigo-500" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <label htmlFor="description" className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows="6"
+                      placeholder="Please provide specific details..."
+                      className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none resize-none ${darkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:bg-white"}`}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${loading
+                        ? "bg-indigo-400 cursor-not-allowed"
+                        : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/30"}`}
                     >
-                      <span>{cat.icon}</span>
-                      <span className="hidden sm:inline">{cat.label}</span>
+                      {loading ? (
+                        <>Processing...</>
+                      ) : (
+                        <>
+                          Submit Ticket <Send className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label
-                  htmlFor="description"
-                  className={`block text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-                >
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Please describe your issue in detail..."
-                  rows="5"
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all ${darkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "border-gray-300 text-gray-900"}`}
-                  disabled={loading}
-                />
-                <p className={`text-xs mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                  Be as detailed as possible to help us resolve your issue faster.
-                </p>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || submitted}
-                className={`w-full py-3 rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2 ${loading || submitted
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl"
-                  }`}
-              >
-                <Send className="w-5 h-5" />
-                {loading ? "Submitting..." : submitted ? "✓ Submitted" : "Submit Ticket"}
-              </button>
-            </form>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Sidebar Info */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Quick Info Card */}
-          <div className={`rounded-xl p-6 border ${darkMode ? "bg-indigo-900/20 border-indigo-800" : "bg-indigo-50 border-indigo-200"}`}>
-            <h3 className={`font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-indigo-300" : "text-indigo-900"}`}>
-              <AlertCircle className="w-5 h-5" />
-              Need Help?
+        {/* Right Column: Info & FAQs */}
+        <div className="space-y-6">
+          {/* Support Info Card */}
+          <div className={`rounded-2xl p-6 border shadow-lg ${darkMode ? "bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-800" : "bg-gradient-to-br from-indigo-50 to-white border-indigo-100"}`}>
+            <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-indigo-900"}`}>
+              <AlertCircle className="w-5 h-5 text-indigo-500" />
+              Direct Support
             </h3>
-            <ul className={`space-y-3 text-sm ${darkMode ? "text-indigo-200" : "text-indigo-800"}`}>
-              <li>
-                <strong>📞 Call Support:</strong> +91-XXXX-XXXXX
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? "bg-gray-800 text-indigo-400" : "bg-white text-indigo-600 shadow-sm"}`}>
+                  <LifeBuoy className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Helpline</p>
+                  <p className={`font-medium ${darkMode ? "text-gray-200" : "text-gray-800"}`}>+1 (800) 123-4567</p>
+                </div>
               </li>
-              <li>
-                <strong>📧 Email:</strong> support@smartattend.com
-              </li>
-              <li>
-                <strong>⏰ Hours:</strong> Mon-Fri, 9 AM - 6 PM
+              <li className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? "bg-gray-800 text-indigo-400" : "bg-white text-indigo-600 shadow-sm"}`}>
+                  <Send className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Email</p>
+                  <p className={`font-medium ${darkMode ? "text-gray-200" : "text-gray-800"}`}>help@smartattend.com</p>
+                </div>
               </li>
             </ul>
           </div>
 
-          {/* FAQ Card */}
-          <div className={`rounded-xl p-6 border shadow-sm ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
-            <h3 className={`font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              Common Issues
-            </h3>
-            <ul className="space-y-2 text-sm">
-              {[
-                "Attendance not marked",
-                "Leave approval pending",
-                "Document upload failed",
-                "Password reset needed",
-              ].map((issue, i) => (
-                <li
-                  key={i}
-                  className={`cursor-pointer transition-colors ${darkMode ? "text-gray-400 hover:text-indigo-400" : "text-gray-600 hover:text-indigo-600"}`}
-                >
-                  • {issue}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Status Card */}
-          <div className={`rounded-xl p-6 border ${darkMode ? "bg-green-900/20 border-green-800" : "bg-green-50 border-green-200"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className={`text-sm font-semibold ${darkMode ? "text-green-300" : "text-green-700"}`}>
-                System Operational
-              </span>
+          {/* Quick Links / FAQs */}
+          <div className={`rounded-2xl shadow-sm border overflow-hidden ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"}`}>
+            <div className={`p-4 border-b ${darkMode ? "border-gray-700" : "border-gray-50"}`}>
+              <h3 className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Common Questions</h3>
             </div>
-            <p className={`text-xs ${darkMode ? "text-green-400" : "text-green-600"}`}>
-              All systems running normally. Response time: &lt; 1 hour
-            </p>
+            <div className="p-2">
+              {[
+                "How do I correct my attendance?",
+                "My leave balance is incorrect",
+                "App is not detecting location",
+                "How to reset password?"
+              ].map((q, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className={`block px-4 py-3 text-sm rounded-lg transition-colors flex items-center justify-between group ${darkMode ? "text-gray-400 hover:bg-gray-700 hover:text-white" : "text-gray-600 hover:bg-gray-50 hover:text-indigo-600"}`}
+                >
+                  {q}
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>

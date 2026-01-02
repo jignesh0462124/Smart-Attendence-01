@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -7,166 +7,188 @@ import {
   ShieldAlert,
   Calendar,
   Bell,
+  Info,
+  XCircle,
+  Mail
 } from 'lucide-react';
+import { useUserProfile } from '../context/UserProfileContext';
+import { getMyNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notificationService';
 
-// --- MOCK DATA ---
-const notifications = [
-  {
-    id: 1,
-    icon: AlertTriangle,
-    iconColor: 'text-orange-500',
-    bgColor: 'bg-orange-50',
-    title: 'New Leave Request',
-    description: 'Sarah Johnson has requested sick leave for Oct 28.',
-    time: '10 minutes ago',
-    read: false,
-  },
-  {
-    id: 2,
-    icon: Clock,
-    iconColor: 'text-blue-500',
-    bgColor: 'bg-blue-50',
-    title: 'System Update Scheduled',
-    description: 'Maintenance scheduled for Sunday at 2:00 AM.',
-    time: '2 hours ago',
-    read: false,
-  },
-  {
-    id: 3,
-    icon: CheckCircle,
-    iconColor: 'text-green-500',
-    bgColor: 'bg-green-50',
-    title: 'Attendance Report Ready',
-    description: 'The monthly attendance report for September is available for download.',
-    time: '5 hours ago',
-    read: true,
-  },
-  {
-    id: 4,
-    icon: ShieldAlert,
-    iconColor: 'text-red-500',
-    bgColor: 'bg-red-50',
-    title: 'Security Alert',
-    description: 'Multiple failed login attempts detected from IP 192.168.1.55.',
-    time: '1 day ago',
-    read: true,
-  },
-  {
-    id: 5,
-    icon: Calendar,
-    iconColor: 'text-indigo-500',
-    bgColor: 'bg-indigo-50',
-    title: 'Festival Holiday Reminder',
-    description: 'Office will be closed on Oct 24 for Dussehra.',
-    time: '3 days ago',
-    read: true,
-  },
-];
-
-// --- COMPONENT ---
 const NotificationsPage = () => {
+  const { userProfile } = useUserProfile();
   const { darkMode } = useOutletContext();
-  const [notificationsList, setNotificationsList] = useState(notifications);
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // 'all', 'unread'
 
-  // Mock handlers
-  const handleMarkAllAsRead = () => {
-    const updatedList = notificationsList.map(n => ({ ...n, read: true }));
-    setNotificationsList(updatedList);
+  useEffect(() => {
+    if (userProfile) {
+      fetchNotifications();
+    }
+  }, [userProfile]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await getMyNotifications(userProfile.id);
+      setNotificationsList(data || []);
+    } catch (error) {
+      console.error("Failed to load notifications", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUnread = () => {
-    // Filter to show only unread items
-    const unreadList = notificationsList.filter(n => !n.read);
-    setNotificationsList(unreadList.length > 0 ? unreadList : notifications);
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (error) {
+      console.error("Failed to mark as read", error);
+    }
   };
-  
-  const handleAll = () => {
-    setNotificationsList(notifications);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead(userProfile.id);
+      setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error("Failed to mark all as read", error);
+    }
+  };
+
+  const filteredNotifications = notificationsList.filter(n => {
+    if (filter === 'unread') return !n.read;
+    return true;
+  });
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'warning': return <AlertTriangle className="w-5 h-5 text-orange-500" />;
+      case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'error': return <ShieldAlert className="w-5 h-5 text-red-500" />;
+      case 'info': default: return <Info className="w-5 h-5 text-blue-500" />;
+    }
+  };
+
+  const getBgColor = (type, read) => {
+    if (read) return darkMode ? 'bg-gray-800' : 'bg-white';
+    switch (type) {
+      case 'warning': return darkMode ? 'bg-orange-900/10' : 'bg-orange-50';
+      case 'success': return darkMode ? 'bg-green-900/10' : 'bg-green-50';
+      case 'error': return darkMode ? 'bg-red-900/10' : 'bg-red-50';
+      case 'info': default: return darkMode ? 'bg-blue-900/10' : 'bg-blue-50';
+    }
+  };
+
+  const getTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+          <h2 className={`text-3xl font-extrabold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>
             Notifications
           </h2>
-          <p className={`mt-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+          <p className={`mt-2 text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
             Stay updated with alerts and activities.
           </p>
+        </div>
+        <div className={`px-4 py-2 rounded-full text-sm font-semibold border flex items-center gap-2 ${darkMode ? "bg-gray-800 border-gray-700 text-indigo-400" : "bg-white border-gray-200 text-indigo-600"}`}>
+          <Bell className="w-4 h-4" />
+          {notificationsList.filter(n => !n.read).length} Unread
         </div>
       </div>
 
       {/* Notifications Card */}
-      <div className={`rounded-xl shadow-sm border p-8 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+      <div className={`rounded-xl shadow-lg border overflow-hidden ${darkMode ? "bg-gray-800 border-gray-700 shadow-gray-900/50" : "bg-white border-gray-100 shadow-slate-200/50"}`}>
 
-        {/* Title and Controls */}
-        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b ${darkMode ? "border-gray-700" : "border-gray-100"}`}>
-          <div className="mb-4 sm:mb-0">
-            <h3 className={`text-xl font-bold flex items-center space-x-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              <Bell className="w-5 h-5 text-indigo-600" />
-              <span>Recent Alerts</span>
-            </h3>
-          </div>
-
-          {/* Filter and Action Buttons */}
-          <div className="flex space-x-2 text-sm">
+        {/* Action Bar */}
+        <div className={`flex flex-col sm:flex-row items-center justify-between p-6 border-b ${darkMode ? "border-gray-700 bg-gray-800/50" : "border-gray-50 bg-gray-50/50"}`}>
+          <div className="flex gap-2 mb-4 sm:mb-0 w-full sm:w-auto">
             <button
-              onClick={handleAll}
-              className={`px-3 py-1 font-medium rounded-lg transition-colors ${darkMode ? "text-indigo-400 hover:bg-gray-700" : "text-indigo-600 hover:bg-indigo-50"}`}
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'all'
+                ? (darkMode ? "bg-indigo-600 text-white" : "bg-indigo-100 text-indigo-700")
+                : (darkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-100")}`}
             >
               All
             </button>
             <button
-              onClick={handleUnread}
-              className={`px-3 py-1 font-medium rounded-lg transition-colors ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              onClick={() => setFilter('unread')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'unread'
+                ? (darkMode ? "bg-indigo-600 text-white" : "bg-indigo-100 text-indigo-700")
+                : (darkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-100")}`}
             >
               Unread
             </button>
+          </div>
+
+          {notificationsList.some(n => !n.read) && (
             <button
               onClick={handleMarkAllAsRead}
-              className={`px-3 py-1 font-medium rounded-lg transition-colors ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`text-sm font-medium transition-colors flex items-center gap-2 ${darkMode ? "text-indigo-400 hover:text-indigo-300" : "text-indigo-600 hover:text-indigo-700"}`}
             >
-              Mark all as read
+              <CheckCircle className="w-4 h-4" /> Mark all as read
             </button>
-          </div>
+          )}
         </div>
 
-        {/* Notification List */}
-        <div className="space-y-4">
-          {notificationsList.map((notification) => (
-            <div
-              key={notification.id}
-              className={`flex justify-between items-center p-4 border rounded-lg transition-shadow ${!notification.read
-                ? (darkMode ? 'bg-gray-700 border-gray-600 hover:shadow-md' : 'bg-white border-gray-200 hover:shadow-md')
-                : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200')
-                }`}
-            >
-
-              {/* Icon and Content */}
-              <div className="flex items-start space-x-4">
-                <div className={`p-2 rounded-full ${darkMode ? "bg-gray-900" : notification.bgColor}`}>
-                  <notification.icon className={`w-5 h-5 ${notification.iconColor}`} />
-                </div>
-                <div className="flex-1">
-                  <h4 className={`text-sm font-semibold ${!notification.read
-                    ? (darkMode ? 'text-white' : 'text-gray-900')
-                    : (darkMode ? 'text-gray-400' : 'text-gray-700')
-                    }`}>
-                    {notification.title}
-                    {!notification.read && <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full ml-2"></span>}
-                  </h4>
-                  <p className={`text-sm mt-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{notification.description}</p>
-                </div>
-              </div>
-
-              {/* Time Stamp */}
-              <div className={`text-xs flex-shrink-0 ml-4 ${darkMode ? "text-gray-500" : "text-gray-500"}`}>
-                {notification.time}
-              </div>
+        {/* List */}
+        <div className="divide-y text-sm"> {/* Removed p-4 to let items flush */}
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className={darkMode ? "text-gray-400" : "text-gray-500"}>Loading notifications...</p>
             </div>
-          ))}
+          ) : filteredNotifications.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <div className={`p-4 rounded-full mb-4 ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                <Bell className={`w-8 h-8 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+              </div>
+              <h3 className={`text-lg font-bold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>No notifications</h3>
+              <p className={`max-w-xs mx-auto ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                {filter === 'unread' ? "You're all caught up! No unread messages." : "You have no notifications yet."}
+              </p>
+            </div>
+          ) : (
+            filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                onClick={() => !notification.read && handleMarkAsRead(notification.id)}
+                className={`flex gap-4 p-5 transition-all cursor-pointer group ${getBgColor(notification.type, notification.read)} ${darkMode ? "hover:bg-gray-700/50 border-gray-700" : "hover:bg-gray-50 border-gray-100"}`}
+              >
+                <div className={`mt-1 flex-shrink-0`}>
+                  {getIcon(notification.type)}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h4 className={`text-base font-semibold mb-1 ${!notification.read ? (darkMode ? "text-white" : "text-gray-900") : (darkMode ? "text-gray-400" : "text-gray-600")}`}>
+                      {notification.title}
+                      {!notification.read && <span className="inline-block w-2 h-2 bg-red-500 rounded-full ml-2 animate-pulse"></span>}
+                    </h4>
+                    <span className={`text-xs whitespace-nowrap ${darkMode ? "text-gray-500 px-2 py-1 bg-gray-900 rounded-md" : "text-gray-400 bg-gray-100 px-2 py-1 rounded-md"}`}>
+                      {getTimeAgo(notification.created_at)}
+                    </span>
+                  </div>
+                  <p className={`text-sm leading-relaxed ${darkMode ? "text-gray-400 group-hover:text-gray-300" : "text-gray-600 group-hover:text-gray-800"}`}>
+                    {notification.description}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

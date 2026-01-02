@@ -17,6 +17,7 @@ import {
 } from "../services/attendanceService";
 import { useGeolocated } from "react-geolocated";
 import Webcam from "react-webcam";
+import { initializeFaceDetector, detectFaces } from "../services/faceDetectionService";
 
 const ATTENDANCE_BUCKET = "attendance-photos";
 
@@ -33,6 +34,10 @@ const EmployeeDashboard = () => {
   const [todayStatus, setTodayStatus] = useState(null);
   const [todayRecord, setTodayRecord] = useState(null);
 
+  // Face Detection State
+  const [isDetectorReady, setIsDetectorReady] = useState(false);
+  const [faceCount, setFaceCount] = useState(0);
+
   // States for stats
   const [stats, setStats] = useState({
     workingDays: 0,
@@ -47,6 +52,34 @@ const EmployeeDashboard = () => {
     positionOptions: { enableHighAccuracy: true },
     userDecisionTimeout: 10000,
   });
+
+  // Initialize Face Detector
+  useEffect(() => {
+    const init = async () => {
+      const ready = await initializeFaceDetector();
+      setIsDetectorReady(ready);
+    };
+    init();
+  }, []);
+
+  // Run Face Detection Loop
+  useEffect(() => {
+    let animationFrameId;
+
+    const detectLoop = () => {
+      if (isDetectorReady && webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4) {
+        const { numberOfFaces } = detectFaces(webcamRef.current.video);
+        setFaceCount(numberOfFaces);
+      }
+      animationFrameId = requestAnimationFrame(detectLoop);
+    };
+
+    if (isDetectorReady) {
+      detectLoop();
+    }
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isDetectorReady]);
 
   // Clock
   useEffect(() => {
@@ -195,6 +228,19 @@ const EmployeeDashboard = () => {
                   {isGeolocationEnabled ? "Location Enabled" : "Location Disabled"}
                 </span>
               </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${isDetectorReady ? "bg-green-500" : "bg-yellow-500 animate-pulse"}`}></span>
+                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  {isDetectorReady ? "Camera Ready" : "Initializing Camera..."}
+                </span>
+              </div>
+              {/* Face Detection Status */}
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${faceCount === 1 ? "bg-green-500" : "bg-red-500"}`}></span>
+                <span className={`font-medium ${faceCount === 1 ? "text-green-600" : "text-red-500"}`}>
+                  {faceCount === 0 ? "No Face Detected" : faceCount === 1 ? "Face Detected (Ready)" : "Multiple Faces Detected!"}
+                </span>
+              </div>
               {coords && <div className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Lat: {coords.latitude.toFixed(4)}, Long: {coords.longitude.toFixed(4)}</div>}
             </div>
 
@@ -219,9 +265,12 @@ const EmployeeDashboard = () => {
                 screenshotFormat="image/jpeg"
                 videoConstraints={{ facingMode: "user" }}
                 className="w-full h-full object-cover"
+                onUserMedia={() => { console.log("Webcam user media loaded"); }}
               />
+              {/* Face Bounding Box Overlay (Optional visualization) */}
+
               {/* Time Overlay */}
-              <div className="absolute bottom-0 inset-x-0 bg-black/60 p-2 text-center text-white text-sm font-mono">
+              <div className="absolute bottom-0 inset-x-0 bg-black/60 p-2 text-center text-white text-sm font-mono z-10">
                 {currentTime.toLocaleTimeString()}
               </div>
             </div>
@@ -229,20 +278,20 @@ const EmployeeDashboard = () => {
             <div className="flex gap-4 w-full max-w-sm">
               <button
                 onClick={handleClockIn}
-                disabled={isSubmitting || (todayRecord && !todayRecord.check_out && todayStatus !== 'Clocked Out')}
-                className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-all ${todayRecord
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 text-white"
+                disabled={isSubmitting || (todayRecord && !todayRecord.check_out && todayStatus !== 'Clocked Out') || faceCount !== 1}
+                className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-all ${todayRecord || faceCount !== 1
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 text-white"
                   }`}
               >
-                Clock In
+                {faceCount !== 1 ? "Face Check Failed" : "Clock In"}
               </button>
               <button
                 onClick={handleClockOut}
-                disabled={isSubmitting || !todayRecord || todayRecord.check_out}
-                className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-all ${!todayRecord || todayRecord.check_out
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700 text-white"
+                disabled={isSubmitting || !todayRecord || todayRecord.check_out || faceCount !== 1}
+                className={`flex-1 py-3 rounded-xl font-bold shadow-md transition-all ${!todayRecord || todayRecord.check_out || faceCount !== 1
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-red-600 hover:bg-red-700 text-white"
                   }`}
               >
                 Clock Out
@@ -274,8 +323,8 @@ const EmployeeDashboard = () => {
                   <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status === 'Present' ? 'bg-green-100 text-green-700' :
-                        record.status === 'Late' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
+                      record.status === 'Late' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
                       }`}>
                       {record.status}
                     </span>

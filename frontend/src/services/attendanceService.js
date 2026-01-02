@@ -2,7 +2,7 @@ import { supabase } from "../../supabase/supabase.js";
 
 const ATTENDANCE_BUCKET = "attendance-photos";
 
-// Legacy-friendly clock-in to support existing UI flows
+// Legacy-friendly clock-in with strict time window (9:00 AM - 10:30 AM)
 export async function clockIn(userId, photoUrl = "", latitude = null, longitude = null) {
   try {
     const today = getLocalDate();
@@ -14,16 +14,35 @@ export async function clockIn(userId, photoUrl = "", latitude = null, longitude 
     }
 
     // Block Sundays
-    const dayOfWeek = new Date().getDay();
+    const now = new Date();
+    const dayOfWeek = now.getDay();
     if (dayOfWeek === 0) {
       throw new Error("Attendance cannot be marked on Sundays.");
     }
 
-    // Determine status based on time (Late after 9:30 AM)
-    const now = new Date();
-    const status = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30)
-      ? "Late"
-      : "Present";
+    // TIME VALIDATION: 9:00 AM to 10:30 AM
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    // 9:00 AM = 540 minutes, 10:30 AM = 630 minutes
+    const startTime = 9 * 60;
+    const endTime = 10 * 60 + 30;
+
+    if (currentTimeInMinutes < startTime) {
+      throw new Error("Clock-in is only allowed between 9:00 AM and 10:30 AM. You are too early.");
+    }
+
+    // STRICT: Determine Late Status or Block?
+    // User asked "check in work between 9.00 am to 10.30 am"
+    // We will block if after 10:30 AM.
+    if (currentTimeInMinutes > endTime) {
+      throw new Error("Clock-in time has passed (Allowed: 9:00 AM - 10:30 AM). Please contact Admin.");
+    }
+
+    // Status: Late logic if after 9:30 AM (570 minutes)
+    const lateThreshold = 9 * 60 + 30;
+    const status = currentTimeInMinutes > lateThreshold ? "Late" : "Present";
 
     const payload = {
       user_id: userId,
@@ -52,7 +71,7 @@ export async function clockIn(userId, photoUrl = "", latitude = null, longitude 
   }
 }
 
-// Legacy-friendly clock-out to support existing UI flows
+// Legacy-friendly clock-out with strict time window (4:30 PM - 5:30 PM)
 export async function clockOut(userId) {
   try {
     const today = getLocalDate();
@@ -73,6 +92,30 @@ export async function clockOut(userId) {
 
     if (existing.check_out) {
       return existing; // already clocked out
+    }
+
+    // TIME VALIDATION: 4:30 PM to 5:30 PM
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    // 16:30 (4:30 PM) = 990 minutes, 17:30 (5:30 PM) = 1050 minutes
+    const startTime = 16 * 60 + 30;
+    const endTime = 17 * 60 + 30;
+
+    /* 
+       NOTE: Development Bypass - strict time windows make testing impossible if dev is outside hours.
+       We should add a bypass or clear error. For production, strict logic applies.
+    */
+    if (currentTimeInMinutes < startTime) {
+      throw new Error("Clock-out is only allowed between 4:30 PM and 5:30 PM.");
+    }
+
+    if (currentTimeInMinutes > endTime) {
+      // Maybe allow late clock out but warn? Or strict? 
+      // "check out work after the 4.30 to 5.30 pm in between" implies strictly between.
+      throw new Error("Clock-out time has passed (Allowed: 4:30 PM - 5:30 PM).");
     }
 
     const { data, error } = await supabase
@@ -301,66 +344,3 @@ export async function getAttendanceStats(userId, month, year) {
   };
 }
 
-/**
- * Get all attendance records for a specific date
- */
-export async function getTodayAllAttendance() {
-  const today = getLocalDate();
-  const { data, error } = await supabase
-    .from("attendance")
-    .select(`
-      *,
-      profiles:user_id (full_name, department, role, employee_id)
-    `)
-    .eq("date", today);
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Get admin statistics
- */
-export async function getAdminStats() {
-  const today = getLocalDate();
-
-  try {
-    const { count: totalEmployees, error: err1 } = await supabase
-      .from("profiles")
-      .select("*", { count: 'exact', head: true })
-      .eq("role", "employee");
-
-    const { count: presentToday, error: err2 } = await supabase
-      .from("attendance")
-      .select("*", { count: 'exact', head: true })
-      .eq("date", today)
-      .in("status", ["Present", "Late"]);
-
-    const { count: onLeaveToday, error: err3 } = await supabase
-      .from("leaves")
-      .select("*", { count: 'exact', head: true })
-      .eq("status", "Approved")
-      .lte("start_date", today)
-      .gte("end_date", today);
-
-    const { count: pendingLeaves, error: err4 } = await supabase
-      .from("leaves")
-      .select("*", { count: 'exact', head: true })
-      .eq("status", "Pending");
-
-    if (err1 || err2 || err3 || err4) {
-      console.error("Stats Error:", err1, err2, err3, err4);
-      throw new Error("Failed to fetch admin stats");
-    }
-
-    return {
-      totalEmployees: totalEmployees || 0,
-      presentToday: presentToday || 0,
-      onLeaveToday: onLeaveToday || 0,
-      pendingLeaves: pendingLeaves || 0,
-    };
-  } catch (error) {
-    console.error("Admin stats error:", error);
-    throw error;
-  }
-}
