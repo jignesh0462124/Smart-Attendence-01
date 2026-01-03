@@ -158,6 +158,14 @@ const Layout = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
+                {isActive('/employee-dashboard') && (
+                  <button
+                    onClick={() => navigate('/instructions')}
+                    className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${darkMode ? 'bg-gray-800 text-blue-400 hover:bg-gray-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+                  >
+                    <HelpCircle size={16} /> Guidelines
+                  </button>
+                )}
                 <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg transition-colors ${darkMode ? "hover:bg-gray-800 text-yellow-400" : "hover:bg-gray-100 text-gray-600"}`}>
                   {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>

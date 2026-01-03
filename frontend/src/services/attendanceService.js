@@ -300,7 +300,7 @@ export async function getAttendanceStats(userId, month, year) {
 
   const { data: attendance, error: attError } = await supabase
     .from("attendance")
-    .select("status, date")
+    .select("id, status, date, check_in, check_out")
     .eq("user_id", userId)
     .gte("date", startDate)
     .lte("date", endDate);

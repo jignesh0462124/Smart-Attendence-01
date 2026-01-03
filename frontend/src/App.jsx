@@ -10,6 +10,7 @@ import ProfilePage from "./EmployeePages/ProfilePage";
 import Helpdesk from "./EmployeePages/Helpdesk";
 import Notification from "./Notification/Notification";
 import CompanyCalendar from "./Calender/CompanyCalendar";
+import AttendanceInstructions from "./EmployeePages/AttendanceInstructions";
 import Layout from "./components/Layout";
 import { UserProfileProvider, useUserProfile } from "./context/UserProfileContext";
 
@@ -84,6 +85,7 @@ const App = () => {
             <Route path="helpdesk" element={<Helpdesk />} />
             <Route path="notification" element={<Notification />} />
             <Route path="calendar" element={<CompanyCalendar />} />
+            <Route path="instructions" element={<AttendanceInstructions />} />
           </Route>
 
           {/* Admin Routes Removed - Admin is in a separate project */}
